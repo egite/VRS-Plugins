@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aircraft Lookup - {{REG}}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 20px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.5em; margin-bottom: 16px; color: #1a1a1a; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #silhouette { display: none; }
+  #opLogo { display: none; }
+  .section { background: #fff; border-radius: 6px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .section h2 { font-size: 1.1em; color: #0066cc; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+  .field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+  .field { }
+  .field-label { font-size: 0.75em; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-value { font-size: 0.95em; font-weight: 500; }
+  .loading { text-align: center; padding: 60px 20px; color: #888; }
+  .spinner { border: 3px solid #eee; border-top: 3px solid #0066cc; border-radius: 50%; width: 32px; height: 32px; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .not-found { text-align: center; padding: 40px; color: #888; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 600; }
+  .badge-exact { background: #d4edda; color: #155724; }
+  .badge-close { background: #fff3cd; color: #856404; }
+  .badge-possible { background: #f8d7da; color: #721c24; }
+  .pilot-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+  .pilot-table th { text-align: left; padding: 8px; border-bottom: 2px solid #dee2e6; font-size: 0.8em; text-transform: uppercase; color: #888; }
+  .pilot-table td { padding: 8px; border-bottom: 1px solid #eee; }
+  .corporate-note { padding: 12px; background: #e8f4fd; border-radius: 4px; color: #0c5460; }
+  .ratings { font-size: 0.8em; color: #555; }
+  .ratings span { display: inline-block; white-space: nowrap; background: #e8f0fe; border-radius: 3px; padding: 1px 6px; margin: 2px 4px 2px 0; }
+  .photo-grid { margin-bottom: 16px; }
+  .photo-row { display: flex; gap: 16px; margin-bottom: 16px; }
+  .photo-row:last-child { margin-bottom: 0; }
+  .photo-frame { flex: 1; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+  .photo-frame a { display: block; }
+  .photo-frame img { width: 100%; height: auto; display: block; }
+  .photo-credit { font-size: 0.75em; color: #888; padding: 4px 8px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Aircraft Lookup: <span id="regTitle">{{REG}}</span> <img id="silhouette" alt="" /><img id="opLogo" alt="" /></h1>
+  <div id="photoGrid" class="photo-grid" style="display:none;"></div>
+  <div id="loading" class="loading"><div class="spinner"></div>Loading data...</div>
+  <div id="content" style="display:none;"></div>
+  <div id="notFound" class="not-found" style="display:none;">No data found for this registration.</div>
+</div>
+<script>
+(function() {
+  var reg = '{{REG}}';
+  var params = new URLSearchParams(window.location.search);
+  if(!reg) {
+    reg = params.get('reg') || '';
+  }
+  reg = reg.toUpperCase();
+  document.getElementById('regTitle').textContent = reg;
+  document.title = 'Aircraft Lookup - ' + reg;
+
+  // Look up silhouette and operator logo from VRS aircraft list or cache
+  var _imagesShown = false;
+  function showImages(mdlIcao, opIcao) {
+    _imagesShown = true;
+    if(mdlIcao) {
+      var silImg = document.getElementById('silhouette');
+      silImg.src = '../images/File-' + encodeURIComponent(mdlIcao) + '/Type.png';
+      silImg.onload = function() { silImg.style.display = 'inline'; };
+    }
+    if(opIcao) {
+      var logoImg = document.getElementById('opLogo');
+      logoImg.src = '../images/File-' + encodeURIComponent(opIcao) + '/OpFlag.png';
+      logoImg.onload = function() { logoImg.style.display = 'inline'; };
+    }
+  }
+
+  // Fallback: use VRS cache data from the FAA response if live lookup didn't find it
+  var _pendingCacheImages = null;
+  function showCacheImages(mdlIcao, opIcao) {
+    if(_imagesShown) return;
+    _pendingCacheImages = { mdl: mdlIcao, op: opIcao };
+    // Wait briefly for live lookup to finish first
+    setTimeout(function() {
+      if(!_imagesShown && _pendingCacheImages) {
+        showImages(_pendingCacheImages.mdl, _pendingCacheImages.op);
+      }
+    }, 1500);
+  }
+
+  var xhrAc = new XMLHttpRequest();
+  xhrAc.open('GET', '../AircraftList.json', true);
+  xhrAc.onreadystatechange = function() {
+    if(xhrAc.readyState !== 4 || xhrAc.status !== 200) return;
+    try {
+      var data = JSON.parse(xhrAc.responseText);
+      var list = data.acList || [];
+      var regUp = reg.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      for(var i = 0; i < list.length; i++) {
+        var ac = list[i];
+        var acReg = (ac.Reg || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if(acReg === regUp) {
+          showImages(ac.Type || '', ac.OpIcao || '');
+          return;
+        }
+      }
+      // Aircraft not on map — use cached data if available
+      if(!_imagesShown && _pendingCacheImages) {
+        showImages(_pendingCacheImages.mdl, _pendingCacheImages.op);
+      }
+    } catch(e) {}
+  };
+  xhrAc.send();
+
+  // Fetch aircraft photos from public APIs
+  function buildPhotoFrame(photoUrl, linkUrl, photographer, source) {
+    var frame = document.createElement('div');
+    frame.className = 'photo-frame';
+    var a = document.createElement('a');
+    a.href = linkUrl || '#';
+    a.target = '_blank';
+    var img = document.createElement('img');
+    img.src = photoUrl;
+    img.alt = 'Aircraft photo';
+    a.appendChild(img);
+    frame.appendChild(a);
+    var credit = document.createElement('div');
+    credit.className = 'photo-credit';
+    credit.textContent = (photographer || '') + (photographer && source ? ' / ' : '') + (source || '');
+    frame.appendChild(credit);
+    return frame;
+  }
+
+  function layoutPhotos(photos) {
+    var grid = document.getElementById('photoGrid');
+    if(photos.length === 0) return;
+    grid.innerHTML = '';
+    if(photos.length === 3) {
+      // 1 on top, 2 on bottom
+      var topRow = document.createElement('div');
+      topRow.className = 'photo-row';
+      topRow.appendChild(photos[0]);
+      grid.appendChild(topRow);
+      var bottomRow = document.createElement('div');
+      bottomRow.className = 'photo-row';
+      bottomRow.appendChild(photos[1]);
+      bottomRow.appendChild(photos[2]);
+      grid.appendChild(bottomRow);
+    } else {
+      // All in one row
+      var row = document.createElement('div');
+      row.className = 'photo-row';
+      for(var i = 0; i < photos.length; i++) row.appendChild(photos[i]);
+      grid.appendChild(row);
+    }
+    grid.style.display = 'block';
+  }
+
+  if(reg) {
+    var phXhr = new XMLHttpRequest();
+    phXhr.open('GET', 'Photos.json?reg=' + encodeURIComponent(reg), true);
+    phXhr.onreadystatechange = function() {
+      if(phXhr.readyState !== 4 || phXhr.status !== 200) return;
+      try {
+        var data = JSON.parse(phXhr.responseText);
+        var avFrames = [];
+        var ddgFrames = [];
+        for(var i = 0; i < data.length; i++) {
+          var p = data[i];
+          if(!p.photoUrl) continue;
+          var frame = buildPhotoFrame(p.photoUrl, p.photoLink || '', p.photographer || '', p.source || '');
+          if(p.source === 'DuckDuckGo') ddgFrames.push(frame);
+          else avFrames.push(frame);
+        }
+        if(avFrames.length > 0) {
+          layoutPhotos(avFrames);
+        } else if(ddgFrames.length > 0) {
+          var grid = document.getElementById('photoGrid');
+          grid.innerHTML = '';
+          var wrapper = document.createElement('div');
+          wrapper.style.cssText = 'border:1px solid #e0c080;border-radius:6px;background:#fffbe6;margin-top:4px;';
+          var header = document.createElement('div');
+          header.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:0.9em;color:#856404;font-weight:bold;';
+          header.textContent = '\u25B6 Web search results (may not be this aircraft) \u2014 click to expand';
+          var content = document.createElement('div');
+          content.style.cssText = 'display:none;padding:8px 12px;';
+          header.addEventListener('click', function() {
+            if(content.style.display === 'none') {
+              content.style.display = 'block';
+              header.textContent = '\u25BC Web search results (may not be this aircraft) \u2014 click to collapse';
+            } else {
+              content.style.display = 'none';
+              header.textContent = '\u25B6 Web search results (may not be this aircraft) \u2014 click to expand';
+            }
+          });
+          var row = document.createElement('div');
+          row.className = 'photo-row';
+          for(var j = 0; j < ddgFrames.length; j++) row.appendChild(ddgFrames[j]);
+          content.appendChild(row);
+          wrapper.appendChild(header);
+          wrapper.appendChild(content);
+          grid.appendChild(wrapper);
+          grid.style.display = 'block';
+        }
+      } catch(e) {}
+    };
+    phXhr.send();
+  }
+
+  if(!reg) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('notFound').style.display = 'block';
+    return;
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'Aircraft.json?reg=' + encodeURIComponent(reg), true);
+  xhr.onreadystatechange = function() {
+    if(xhr.readyState !== 4) return;
+    document.getElementById('loading').style.display = 'none';
+
+    if(xhr.status !== 200) {
+      document.getElementById('notFound').style.display = 'block';
+      return;
+    }
+
+    var data;
+    try { data = JSON.parse(xhr.responseText); } catch(e) {
+      document.getElementById('notFound').style.display = 'block';
+      return;
+    }
+
+    if(!data.found) {
+      document.getElementById('notFound').style.display = 'block';
+      return;
+    }
+
+    renderData(data);
+  };
+  xhr.send();
+
+  function renderData(data) {
+    var r = data.registration || {};
+    var a = data.aircraft_ref || {};
+    var e = data.engine_ref || {};
+    var source = data.source || 'faa';
+    window._weightUnit = data.weight_unit || 'lbs';
+    var isCanadian = (source === 'ccar');
+    var isCasa = (source === 'casa');
+    var isNzcaa = (source === 'nzcaa');
+    var html = '';
+
+    // Show silhouette and logo from VRS cache if aircraft isn't live on map
+    showCacheImages(data.vrs_model_icao || '', data.vrs_operator_icao || '');
+
+    // Database date at top
+    var isVrsCache = (source === 'vrs_cache');
+    if(isCanadian) {
+      document.getElementById('regTitle').textContent = reg;
+      document.querySelector('h1').childNodes[0].textContent = 'CCAR Lookup: ';
+    } else if(isNzcaa) {
+      document.getElementById('regTitle').textContent = reg;
+      document.querySelector('h1').childNodes[0].textContent = 'CAA (NZ) Lookup: ';
+    } else if(isCasa) {
+      document.getElementById('regTitle').textContent = reg;
+      document.querySelector('h1').childNodes[0].textContent = 'CASA Lookup: ';
+    } else if(isVrsCache) {
+      document.getElementById('regTitle').textContent = reg;
+      document.querySelector('h1').childNodes[0].textContent = 'Aircraft Lookup: ';
+    }
+    if(data.db_date) {
+      var dbLabel = isCanadian ? 'CCAR' : (isCasa ? 'CASA' : (isNzcaa ? 'NZ CAA' : 'FAA'));
+      html += '<div style="font-size:0.85em;color:#666;margin-bottom:12px;">' + dbLabel + ' database downloaded: ' + esc(data.db_date) + '</div>';
+    }
+
+    if(isCanadian) {
+      // CCAR Aircraft Registration
+      html += '<div class="section"><h2>Aircraft Registration</h2><div class="field-grid">';
+      html += field('Registration', 'C-' + (r.mark || ''));
+      html += field('Make', r.common_name);
+      html += field('Model', r.model_name);
+      html += field('Serial Number', r.serial_number);
+      html += field('Manufacturer', r.manufacturer_name);
+      html += field('Aircraft Category', r.aircraft_category);
+      html += field('Engine Category', r.engine_category);
+      html += field('Number of Engines', r.number_of_engines);
+      html += field('Number of Seats', r.number_of_seats);
+      html += field('Weight', fmtWeight(r.air_weight_kg, true, window._weightUnit));
+      html += field('Issue Date', fmtDate(r.issue_date));
+      html += field('Effective Date', fmtDate(r.effective_date));
+      html += field('Ineffective Date', fmtDate(r.ineffective_date));
+      html += field('Registered Purpose', r.registered_purpose);
+      html += field('Flight Authority', r.flight_authority);
+      html += field('Status', r.registration_status);
+      html += field('Province/State', r.province_state);
+      html += field('City', descCanadianCity(r.city));
+      html += '</div></div>';
+
+      // CCAR Owners
+      html += '<div class="section"><h2>Owner Information</h2>';
+      var owners = data.owners || [];
+      if(owners.length === 0) {
+        html += '<div style="color:#888;">No owner information available.</div>';
+      } else {
+        for(var oi = 0; oi < owners.length; oi++) {
+          var ow = owners[oi];
+          if(oi > 0) html += '<hr style="margin:12px 0;border:none;border-top:1px solid #eee;">';
+          html += '<div class="field-grid">';
+          html += field('Owner Name', ow.owner_name);
+          html += field('Owner Type', ow.owner_type);
+          html += field('Street', ow.street);
+          html += field('City', ow.city);
+          html += field('Province/State', ow.province_state);
+          html += field('Postal Code', ow.postal_code);
+          html += field('Country', ow.country);
+          html += addressField(ow.street, ow.city, ow.province_state, ow.postal_code);
+          html += '</div>';
+        }
+      }
+      html += '</div>';
+
+      // No pilot data for Canadian aircraft - section removed entirely
+      /*
+      html += '<div class="section"><h2>Pilot Information</h2>';
+      html += '';
+      html += '<div class="corporate-note">Canadian pilot certification records are not publicly available.</div>';
+      html += '</div>';
+      */
+
+    } else if(isNzcaa) {
+      // CAA (New Zealand) Aircraft Registration
+      html += '<div class="section"><h2>CAA (New Zealand) Aircraft Registration';
+      if(data.is_ladd) html += ' <span style="color:#e67e22;font-size:0.6em;font-weight:normal;background:#fef3e6;padding:2px 8px;border-radius:10px;border:1px solid #e67e22;vertical-align:middle;">LADD BLOCKED</span>';
+      html += '</h2>';
+      html += '<div style="font-size:0.85em;color:#0c5460;background:#e8f4fd;padding:6px 10px;border-radius:4px;margin-bottom:8px;">Civil Aviation Authority of New Zealand</div>';
+      html += '<div class="field-grid">';
+      html += renderAllFields(r);
+      html += '</div></div>';
+
+    } else if(isCasa) {
+      // CASA Aircraft Registration
+      html += '<div class="section"><h2>CASA Aircraft Registration';
+      if(data.is_ladd) html += ' <span style="color:#e67e22;font-size:0.6em;font-weight:normal;background:#fef3e6;padding:2px 8px;border-radius:10px;border:1px solid #e67e22;vertical-align:middle;">LADD BLOCKED</span>';
+      html += '</h2>';
+      html += '<div style="font-size:0.85em;color:#0c5460;background:#e8f4fd;padding:6px 10px;border-radius:4px;margin-bottom:8px;">Australian Civil Aviation Safety Authority</div>';
+      html += '<div class="field-grid">';
+      html += renderAllFields(r);
+      html += '</div></div>';
+
+    } else if(isVrsCache) {
+      // VRS Cache — non-US/Canadian/Australian aircraft
+      html += '<div class="section"><h2>Aircraft Information';
+      if(data.is_ladd) html += ' <span style="color:#e67e22;font-size:0.6em;font-weight:normal;background:#fef3e6;padding:2px 8px;border-radius:10px;border:1px solid #e67e22;vertical-align:middle;">LADD BLOCKED</span>';
+      html += '</h2>';
+      html += '<div style="font-size:0.85em;color:#0c5460;background:#e8f4fd;padding:6px 10px;border-radius:4px;margin-bottom:8px;">Data from VRS local cache. Limited information available for non-US/Canadian/Australian registrations.</div>';
+      html += '<div class="field-grid">';
+      html += field('Registration', r.registration || reg);
+      html += field('ICAO Hex', r.icao_hex);
+      html += field('Country', r.country);
+      html += field('Manufacturer', a.mfr);
+      html += field('Model', a.model);
+      html += field('ICAO Type', data.vrs_model_icao);
+      html += field('Operator', data.vrs_operator);
+      html += field('Operator ICAO', data.vrs_operator_icao);
+      html += field('Serial Number', r.serial_number);
+      html += field('Year Built', r.year_built);
+      html += '</div></div>';
+
+    } else {
+      // FAA Aircraft Registration
+      html += '<div class="section"><h2>Aircraft Registration';
+      if(data.is_ladd) html += ' <span style="color:#e67e22;font-size:0.6em;font-weight:normal;background:#fef3e6;padding:2px 8px;border-radius:10px;border:1px solid #e67e22;vertical-align:middle;">LADD BLOCKED</span>';
+      html += '</h2><div class="field-grid">';
+      html += field('N-Number', 'N' + (r.n_number || ''));
+      html += field('Serial Number', r.serial_number);
+      html += field('Manufacturer/Model', (a.mfr || '') + ' ' + (a.model || ''));
+      html += field('Year Manufactured', r.year_mfr);
+      html += field('Type Aircraft', descTypeAircraft(r.type_aircraft));
+      html += field('Status', descStatus(r.status_code));
+      html += field('Certification', descCertification(r.certification));
+      html += field('Airworthiness Date', fmtDate(r.air_worth_date));
+      html += field('Expiration Date', fmtDate(r.expiration_date));
+      html += field('Certificate Issue Date', fmtDate(r.cert_issue_date));
+      html += field('Last Action Date', fmtDate(r.last_action_date));
+      html += fieldHtml('Mode S Code', fmtModeS(r.mode_s_code));
+      html += field('Fractional Owner', r.fract_owner);
+      html += '</div></div>';
+
+      // FAA Owner Information
+      html += '<div class="section"><h2>Owner Information</h2>';
+      if(!r.name && !r.street && !r.city) {
+        html += '<div style="color:#c00;font-weight:600;padding:8px 0;">Redacted by FAA</div>';
+        if(data.vrs_operator) {
+          html += '<div style="margin-top:8px;padding:10px;background:#e8f4fd;border-radius:4px;border-left:3px solid #0066cc;">';
+          html += '<div style="font-size:0.75em;color:#0c5460;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">From VRS Local Database</div>';
+          html += '<div style="font-weight:600;font-size:1.05em;">' + esc(data.vrs_operator) + '</div>';
+          if(data.vrs_operator_icao) {
+            html += '<div style="font-size:0.85em;color:#666;margin-top:2px;">Operator ICAO: ' + esc(data.vrs_operator_icao) + '</div>';
+          }
+          html += '</div>';
+        }
+      } else {
+        html += '<div class="field-grid">';
+        html += field('Name', r.name);
+        html += field('Registrant Type', descRegistrantType(r.type_registrant));
+        html += field('Street', r.street);
+        if(r.street2) html += field('Street 2', r.street2);
+        html += field('City', r.city);
+        html += field('State', r.state);
+        html += field('ZIP', fmtZip(r.zip_code));
+        html += field('Country', r.country);
+        html += field('Region', descRegion(r.region));
+        html += addressField(r.street, r.city, r.state, r.zip_code);
+        html += '</div>';
+      }
+      html += '</div>';
+
+      // Aircraft Specifications
+      if(a.mfr || a.model) {
+        html += '<div class="section"><h2>Aircraft Specifications</h2><div class="field-grid">';
+        html += field('Manufacturer', a.mfr);
+        html += field('Model', a.model);
+        html += field('Aircraft Category', descAircraftCat(a.ac_cat));
+        html += field('Number of Engines', stripZeros(a.no_eng));
+        html += field('Number of Seats', stripZeros(a.no_seats));
+        html += field('Weight Class', descWeight(a.ac_weight));
+        html += field('Speed (MPH)', stripZeros(a.speed, true));
+        html += field('Engine Type', descEngineType(a.type_eng));
+        html += '</div></div>';
+      }
+
+      // Engine Details
+      if(e.mfr || e.model) {
+        html += '<div class="section"><h2>Engine Details</h2><div class="field-grid">';
+        html += field('Manufacturer', e.mfr);
+        html += field('Model', e.model);
+        html += field('Type', descEngineType(e.type));
+        html += field('Horsepower', stripZeros(e.horsepower, true));
+        html += field('Thrust', stripZeros(e.thrust, true));
+        html += '</div></div>';
+      }
+
+      // Matched Pilots
+      var pilotThreshold = data.pilot_threshold || 100;
+      var hasExactPilot = data.pilots && data.pilots.some(function(p) { return p.score >= pilotThreshold; });
+      var pilotSectionId = 'pilot-section-body';
+      html += '<div class="section"><h2 style="cursor:pointer;" onclick="var el=document.getElementById(\'' + pilotSectionId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';">';
+      html += 'Matched Pilots';
+      if(!hasExactPilot && data.pilots && data.pilots.length > 0) {
+        html += ' <small style="color:#888;font-weight:normal;">(' + data.pilots.length + ' below ' + pilotThreshold + ' pts \u2014 click to expand)</small>';
+      }
+      html += '</h2>';
+      html += '<div id="' + pilotSectionId + '" style="display:' + (hasExactPilot || !data.pilots || data.pilots.length === 0 ? 'block' : 'none') + ';">';
+      if(data.pilot_db_date) {
+        html += '<div style="font-size:0.85em;color:#666;margin-bottom:8px;">Airmen database downloaded: ' + esc(data.pilot_db_date) + '</div>';
+      }
+      if(data.owner_redacted && data.vrs_operator) {
+        html += '<div style="font-size:0.85em;color:#0c5460;background:#e8f4fd;padding:6px 10px;border-radius:4px;margin-bottom:8px;">Pilot matching based on operator from VRS local database: <strong>' + esc(data.vrs_operator) + '</strong></div>';
+      }
+      if(data.is_corporate && (!data.pilots || data.pilots.length === 0)) {
+        html += '<div class="corporate-note">Corporate/non-individual registration. Searched by address only \u2014 no matching pilots found at the registered address.</div>';
+      } else if(!data.pilots || data.pilots.length === 0) {
+        html += '<div class="corporate-note">No matching pilot records found.' + (data.is_address_only ? ' (searched by address only)' : '') + '</div>';
+      } else {
+      if(data.is_address_only) {
+        html += '<div style="font-size:0.85em;color:#0c5460;background:#e8f4fd;padding:6px 10px;border-radius:4px;margin-bottom:8px;">Matched by registration address only (non-individual registration).</div>';
+      }
+      var otherPilots = [];
+      for(var i = 0; i < data.pilots.length; i++) {
+        var p = data.pilots[i];
+        if(hasExactPilot && p.score < pilotThreshold) { otherPilots.push(i); continue; }
+        var badgeClass = p.match_type === 'Exact' ? 'badge-exact' : p.match_type === 'Close' ? 'badge-close' : 'badge-possible';
+        var pilotId = 'pilot-detail-' + i;
+        html += '<div class="pilot-card" onclick="var el=document.getElementById(\'' + pilotId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" style="cursor:pointer;padding:12px;margin-bottom:8px;background:#f8f9fa;border-radius:6px;border:1px solid #e0e0e0;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+        html += '<div><strong>' + esc(p.first_name) + ' ' + esc(p.last_name) + '</strong>';
+        html += ' <span style="color:#666;font-size:0.9em;">' + esc(p.city ? p.city + ', ' + (p.state || '') : '') + '</span></div>';
+        html += '<div><span class="badge ' + badgeClass + '">' + esc(p.match_type) + '</span> <small style="color:#888;">' + p.score + ' pts</small></div>';
+        html += '</div>';
+        html += '<div id="' + pilotId + '" style="display:block;margin-top:12px;border-top:1px solid #dee2e6;padding-top:12px;">';
+        // Pilot details
+        html += '<div class="field-grid">';
+        html += field('Name', (p.first_name || '') + ' ' + (p.last_name || ''));
+        html += field('FAA Unique ID', p.unique_id);
+        html += field('Street', p.street);
+        if(p.street2) html += field('Street 2', p.street2);
+        html += field('City', p.city);
+        html += field('State', p.state);
+        html += field('ZIP', fmtZip(p.zip_code));
+        html += field('Country', p.country);
+        html += field('Region', descRegion(p.region));
+        html += addressField(p.street, p.city, p.state, p.zip_code);
+        html += field('Medical Class', p.med_class ? 'Class ' + p.med_class : '');
+        html += field('Medical Date', fmtDate(p.med_date));
+        html += field('Medical Expiry', fmtDate(p.med_exp_date));
+        html += '</div>';
+        // Certificates
+        if(p.certificates && p.certificates.length > 0) {
+          html += '<h3 style="font-size:0.95em;color:#0066cc;margin:12px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px;">Certificates</h3>';
+          for(var j = 0; j < p.certificates.length; j++) {
+            var c = p.certificates[j];
+            html += '<div style="padding:6px 0;' + (j > 0 ? 'border-top:1px solid #f0f0f0;' : '') + '">';
+            // Detect data format: new format has cert type code in c.type (single letter)
+            // Old format (import bug): type=first_name, expires=cert_type, ratings=level+ratings
+            var certCodes = {'P':1,'F':1,'G':1,'M':1,'R':1,'T':1,'X':1,'W':1,'D':1,'N':1,'H':1,'I':1,'E':1,'A':1,'L':1};
+            var ct = (c.type||'').trim().toUpperCase();
+            var isNew = ct.length <= 2 && certCodes[ct];
+            var certType = isNew ? c.type : c.expires;
+            var parsed = parseCertRatings(c.ratings, isNew);
+            var certLevel = isNew ? c.level : parsed.level;
+            html += '<div><strong>' + esc(descCertType(certType)) + (certLevel ? ' \u2013 ' + esc(descCertLevel(certLevel)) : '') + '</strong></div>';
+            if(isNew && c.expires) html += '<div style="font-size:0.85em;color:#666;">Expires: ' + esc(fmtDate(c.expires)) + '</div>';
+            if(parsed.ratings.length > 0) html += '<div class="ratings" style="margin-top:2px;">' + ratingsToHtml(parsed.ratings) + '</div>';
+            html += '</div>';
+          }
+        }
+        html += '</div></div>';
+      }
+      // Other (non-exact) matches in collapsible section
+      if(otherPilots.length > 0) {
+        var otherId = 'other-pilots-body';
+        html += '<div style="margin-top:12px;border:1px solid #ddd;border-radius:6px;overflow:hidden;">';
+        html += '<div style="cursor:pointer;padding:10px 12px;background:#f0f0f0;font-size:0.9em;" onclick="var el=document.getElementById(\'' + otherId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';">';
+        html += '\u25B6 Other matches (' + otherPilots.length + ' below ' + pilotThreshold + ' pts \u2014 click to expand)';
+        html += '</div>';
+        html += '<div id="' + otherId + '" style="display:none;padding:8px;">';
+        for(var oi = 0; oi < otherPilots.length; oi++) {
+          var op = data.pilots[otherPilots[oi]];
+          var oBadge = op.match_type === 'Close' ? 'badge-close' : 'badge-possible';
+          var oPilotId = 'pilot-detail-' + otherPilots[oi];
+          html += '<div class="pilot-card" onclick="event.stopPropagation();var el=document.getElementById(\'' + oPilotId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" style="cursor:pointer;padding:10px;margin-bottom:6px;background:#f8f9fa;border-radius:4px;border:1px solid #e8e8e8;">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+          html += '<div><strong>' + esc(op.first_name) + ' ' + esc(op.last_name) + '</strong>';
+          html += ' <span style="color:#666;font-size:0.9em;">' + esc(op.city ? op.city + ', ' + (op.state || '') : '') + '</span></div>';
+          html += '<div><span class="badge ' + oBadge + '">' + esc(op.match_type) + '</span> <small style="color:#888;">' + op.score + ' pts</small></div>';
+          html += '</div>';
+          html += '<div id="' + oPilotId + '" style="display:none;margin-top:10px;border-top:1px solid #dee2e6;padding-top:10px;">';
+          html += '<div class="field-grid">';
+          html += field('Name', (op.first_name || '') + ' ' + (op.last_name || ''));
+          html += field('FAA Unique ID', op.unique_id);
+          html += field('City', op.city);
+          html += field('State', op.state);
+          html += field('Medical Class', op.med_class ? 'Class ' + op.med_class : '');
+          html += '</div></div></div>';
+        }
+        html += '</div></div>';
+      }
+    }
+    html += '</div>'; // close pilot-section-body
+    html += '</div>'; // close section
+
+    // NTSB Accidents/Incidents (FAA aircraft only)
+    if(data.ntsb_events && data.ntsb_events.length > 0) {
+      data.ntsb_events.sort(function(a, b) { return parseAnyDate(b.ev_date) - parseAnyDate(a.ev_date); });
+      var hasMatchedNtsb = data.ntsb_events.some(function(e) { return e.type_match !== false; });
+      html += '<div class="section" style="border-left:4px solid ' + (hasMatchedNtsb ? '#dc3545' : '#ccc') + ';">';
+      var ntsbBodyId = 'ntsb-section-body';
+      html += '<h2 style="color:#dc3545;cursor:pointer;" onclick="var el=document.getElementById(\'' + ntsbBodyId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';">NTSB Accidents / Incidents (' + data.ntsb_events.length + ')</h2>';
+      html += '<div id="' + ntsbBodyId + '">';
+      if(data.ntsb_db_date) {
+        html += '<div style="font-size:0.85em;color:#666;margin-bottom:8px;">NTSB database downloaded: ' + esc(data.ntsb_db_date) + '</div>';
+      }
+      for(var ni = 0; ni < data.ntsb_events.length; ni++) {
+        var ne = data.ntsb_events[ni];
+        var ntsbId = 'ntsb-detail-' + ni;
+        var injBadge = '';
+        var highInj = (ne.ev_highest_injury || '').toUpperCase();
+        if(highInj === 'FATL') injBadge = '<span class="badge" style="background:#f8d7da;color:#721c24;">Fatal</span>';
+        else if(highInj === 'SERS') injBadge = '<span class="badge" style="background:#fff3cd;color:#856404;">Serious</span>';
+        else if(highInj === 'MINR') injBadge = '<span class="badge" style="background:#d4edda;color:#155724;">Minor</span>';
+        else if(highInj === 'NONE') injBadge = '<span class="badge" style="background:#d4edda;color:#155724;">None</span>';
+        var evTypeBadge = (ne.ev_type || '').toUpperCase() === 'ACC'
+          ? '<span class="badge" style="background:#f8d7da;color:#721c24;">Accident</span>'
+          : '<span class="badge" style="background:#fff3cd;color:#856404;">Incident</span>';
+        var evDateStr = fmtNtsbDate(ne.ev_date);
+        var evLoc = ne.ev_city ? esc(ne.ev_city) + (ne.ev_state ? ', ' + esc(ne.ev_state) : '') : esc(ne.ev_state || ne.ev_country || '');
+
+        var isTypeMatch = ne.type_match !== false;
+        var cardBg = isTypeMatch ? '#fff5f5' : '#f8f8f8';
+        var cardBorder = isTypeMatch ? '#f5c6cb' : '#ddd';
+        var cardOpacity = isTypeMatch ? '1' : '0.6';
+        html += '<div onclick="var el=document.getElementById(\'' + ntsbId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" style="cursor:pointer;padding:12px;margin-bottom:8px;background:' + cardBg + ';border-radius:6px;border:1px solid ' + cardBorder + ';opacity:' + cardOpacity + ';">';
+        if(!isTypeMatch) {
+          html += '<div style="font-size:0.8em;color:#856404;background:#fff3cd;padding:4px 8px;border-radius:3px;margin-bottom:6px;">Different aircraft type \u2014 N-number may have been reused (' + esc(ne.acft_make || '') + ' ' + esc(ne.acft_model || '') + ')</div>';
+        }
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">';
+        html += '<div><strong>' + esc(evDateStr) + '</strong> &mdash; ' + evLoc + '</div>';
+        html += '<div>' + evTypeBadge + ' ' + injBadge + ' <small style="color:#888;">' + esc(ne.ntsb_no || '') + '</small></div>';
+        html += '</div>';
+        if(ne.damage) {
+          html += '<div style="font-size:0.85em;color:#666;margin-top:4px;">Damage: ' + esc(descNtsbDamage(ne.damage)) + '</div>';
+        }
+        html += '<div id="' + ntsbId + '" style="display:' + (isTypeMatch ? 'block' : 'none') + ';margin-top:12px;border-top:1px solid ' + cardBorder + ';padding-top:12px;">';
+        html += '<div class="field-grid">';
+        html += field('NTSB Number', ne.ntsb_no);
+        html += field('Date', evDateStr);
+        html += field('Location', (ne.ev_city || '') + (ne.ev_state ? ', ' + ne.ev_state : '') + (ne.ev_country && ne.ev_country !== 'USA' ? ', ' + ne.ev_country : ''));
+        html += field('Event Type', (ne.ev_type || '').toUpperCase() === 'ACC' ? 'Accident' : 'Incident');
+        html += field('Highest Injury', descNtsbInjury(ne.ev_highest_injury));
+        html += field('Fatal', ne.inj_tot_f || '0');
+        html += field('Serious', ne.inj_tot_s || '0');
+        html += field('Minor', ne.inj_tot_m || '0');
+        html += field('Uninjured', ne.inj_tot_n || '0');
+        html += field('Aircraft', (ne.acft_make || '') + ' ' + (ne.acft_model || '') + (ne.acft_series ? ' ' + ne.acft_series : ''));
+        html += field('Category', ne.acft_category);
+        html += field('Damage', descNtsbDamage(ne.damage));
+        html += field('FAR Part', ne.far_part);
+        html += field('Operator', ne.oper_name);
+        html += field('Phase of Flight', descNtsbPhase(ne.phase_flt_spec));
+        if(ne.apt_name) html += field('Airport', ne.apt_name);
+        if(ne.light_cond) html += field('Light Condition', descNtsbLight(ne.light_cond));
+        if(ne.sky_cond_nonceil) html += field('Sky Condition', ne.sky_cond_nonceil);
+        if(ne.wind_vel_kts && ne.wind_vel_kts !== '0') html += field('Wind (kts)', ne.wind_vel_kts);
+        if(ne.wx_brief_comp) html += field('Weather Briefing', ne.wx_brief_comp);
+        html += '</div>';
+        if(ne.narr_cause) {
+          html += '<div style="margin-top:12px;"><div class="field-label">PROBABLE CAUSE</div>';
+          html += '<div style="font-size:0.9em;line-height:1.5;margin-top:4px;padding:8px;background:#fff;border-radius:4px;border:1px solid #eee;">' + esc(ne.narr_cause) + '</div></div>';
+        }
+        if(ne.ntsb_no) {
+          html += '<div style="margin-top:8px;"><a href="https://duckduckgo.com/?q=NTSB+' + encodeURIComponent(ne.ntsb_no) + '" target="_blank" style="color:#0066cc;font-size:0.85em;">Search NTSB report ' + esc(ne.ntsb_no) + ' &rarr;</a></div>';
+        }
+        html += '</div></div>';
+      }
+      html += '</div>'; // close ntsb-section-body
+      html += '</div>'; // close section
+    } else if(data.ntsb_events) {
+      // NTSB data available but no events found — show clean indicator
+      html += '<div class="section"><h2>NTSB Accidents / Incidents</h2>';
+      if(data.ntsb_db_date) {
+        html += '<div style="font-size:0.85em;color:#666;margin-bottom:8px;">NTSB database downloaded: ' + esc(data.ntsb_db_date) + '</div>';
+      }
+      html += '<div style="color:#155724;background:#d4edda;padding:10px;border-radius:4px;">No accidents or incidents found for this aircraft.</div>';
+      html += '</div>';
+    }
+
+    // FAA Service Difficulty Reports
+    if(data.sdr_reports && data.sdr_reports.length > 0) {
+      data.sdr_reports.sort(function(a, b) { return parseAnyDate(b.difficulty_date) - parseAnyDate(a.difficulty_date); });
+      html += '<div class="section" style="border-left:4px solid #9B59B6;">';
+      var sdrBodyId = 'sdr-section-body';
+      html += '<h2 style="color:#9B59B6;cursor:pointer;" onclick="var el=document.getElementById(\'' + sdrBodyId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';">FAA Service Difficulty Reports (' + data.sdr_reports.length + ')</h2>';
+      html += '<div id="' + sdrBodyId + '">';
+      if(data.sdr_db_date) {
+        html += '<div style="font-size:0.85em;color:#666;margin-bottom:8px;">SDR database downloaded: ' + esc(data.sdr_db_date) + '</div>';
+      }
+      for(var si = 0; si < data.sdr_reports.length; si++) {
+        var sr = data.sdr_reports[si];
+        var sdrId = 'sdr-detail-' + si;
+        html += '<div onclick="var el=document.getElementById(\'' + sdrId + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" style="cursor:pointer;padding:12px;margin-bottom:8px;background:#f3e8ff;border-radius:6px;border:1px solid #d5b8e8;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+        var sdrDate = sr.difficulty_date ? sr.difficulty_date.split('T')[0] : '';
+        html += '<div><strong>' + esc(sdrDate) + '</strong>';
+        if(sr.part_name) html += ' &mdash; ' + esc(sr.part_name);
+        html += '</div>';
+        if(sr.nature_of_condition) html += '<span style="background:#9B59B6;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.8em;">' + esc(descSdrNature(sr.nature_of_condition)) + '</span>';
+        html += '</div>';
+        html += '<div id="' + sdrId + '" style="display:block;margin-top:12px;border-top:1px solid #d5b8e8;padding-top:12px;">';
+        html += '<div class="field-grid">';
+        html += field('SDR Number', sr.operator_control_number);
+        html += field('Date', sdrDate);
+        html += field('Aircraft', (sr.aircraft_make || '') + ' ' + (sr.aircraft_model || ''));
+        html += field('JASC Code', sr.jasc_code);
+        html += field('Part', sr.part_name);
+        html += field('Part Number', sr.part_number);
+        html += field('Nature', descSdrNature(sr.nature_of_condition));
+        html += field('Stage of Operation', descSdrStage(sr.stage_of_operation));
+        html += field('How Discovered', descSdrDiscovery(sr.how_discovered));
+        html += '</div>';
+        if(sr.discrepancy) {
+          html += '<div style="margin-top:8px;"><strong>Discrepancy:</strong>';
+          html += '<div style="font-size:0.9em;line-height:1.5;margin-top:4px;padding:8px;background:#fff;border-radius:4px;border:1px solid #eee;">' + esc(sr.discrepancy) + '</div></div>';
+        }
+        html += '</div></div>';
+      }
+      html += '</div>'; // close sdr-section-body
+      html += '</div>'; // close section
+    } else if(data.sdr_reports) {
+      html += '<div class="section"><h2>FAA Service Difficulty Reports</h2>';
+      if(data.sdr_db_date) {
+        html += '<div style="font-size:0.85em;color:#666;margin-bottom:8px;">SDR database downloaded: ' + esc(data.sdr_db_date) + '</div>';
+      }
+      html += '<div style="color:#155724;background:#d4edda;padding:10px;border-radius:4px;">No service difficulty reports found for this aircraft.</div>';
+      html += '</div>';
+    }
+
+    } // end FAA else block
+
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('content').style.display = 'block';
+  }
+
+  function field(label, value) {
+    return '<div class="field"><div class="field-label">' + esc(label) + '</div><div class="field-value">' + esc(value || '-') + '</div></div>';
+  }
+
+  function fieldHtml(label, value) {
+    return '<div class="field"><div class="field-label">' + esc(label) + '</div><div class="field-value">' + (value || '-') + '</div></div>';
+  }
+
+  function fmtZip(s) {
+    if(!s) return '';
+    s = s.replace(/[^0-9]/g, '');
+    if(s.length > 5) return s.substring(0, 5) + '-' + s.substring(5);
+    return s;
+  }
+
+  function fmtModeS(s) {
+    if(!s) return '';
+    var n = parseInt(s, 8);
+    if(isNaN(n)) return s;
+    return s + ' (octal)<br><span style="color:#666;font-size:0.85em;">' + n.toString(16).toUpperCase() + ' hex</span>';
+  }
+
+  function stripZeros(s, hideZero) {
+    if(!s) return '';
+    var n = parseInt(s, 10);
+    if(isNaN(n)) return s;
+    if(n === 0) return hideZero ? '' : '0';
+    return n.toLocaleString();
+  }
+
+  function parseAnyDate(s) {
+    if(!s) return 0;
+    // Try ISO/standard: 2025-01-02 or 01/02/2025
+    var d = new Date(s);
+    if(!isNaN(d.getTime())) return d.getTime();
+    // Try NTSB format: 02-Jul-25 00:00:00 (DD-MMM-YY)
+    var months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+    var m = s.match(/^(\d{1,2})-(\w{3})-(\d{2})\b/);
+    if(m) {
+      var yr = parseInt(m[3], 10);
+      yr += yr > 50 ? 1900 : 2000;
+      return new Date(yr, months[m[2].toLowerCase()] || 0, parseInt(m[1], 10)).getTime();
+    }
+    return 0;
+  }
+
+  function addressField(street, city, state, zip) {
+    var parts = [];
+    if(street) parts.push(street);
+    if(city) parts.push(city);
+    if(state) parts.push(state);
+    if(zip) parts.push(zip);
+    var addr = parts.join(', ');
+    if(!addr) return '';
+    // OSM works better with simpler address (no ZIP)
+    var osmParts = [];
+    if(street) osmParts.push(street);
+    if(city) osmParts.push(city);
+    if(state) osmParts.push(state);
+    var osmUrl = 'https://nominatim.openstreetmap.org/ui/search.html?q=' + encodeURIComponent(osmParts.join(', '));
+    var gmapUrl = 'https://www.google.com/maps/search/' + encodeURIComponent(addr);
+    var bingUrl = 'https://www.bing.com/maps?q=' + encodeURIComponent(addr);
+    return '<div class="field"><div class="field-label">Address</div><div class="field-value">' + esc(addr) + '</div></div>' +
+      '<div class="field"><div class="field-label">Map Links</div><div class="field-value" style="display:flex;gap:12px;flex-wrap:wrap;">' +
+      '<a href="' + gmapUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#0066cc;font-size:0.9em;">' +
+        '<img src="https://www.google.com/favicon.ico" width="16" height="16" style="vertical-align:middle;" onerror="this.style.display=\'none\'" /> Google Maps</a>' +
+      '<a href="' + bingUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#0066cc;font-size:0.9em;">' +
+        '<img src="https://www.bing.com/favicon.ico" width="16" height="16" style="vertical-align:middle;" onerror="this.style.display=\'none\'" /> Bing Maps</a>' +
+      '<a href="' + osmUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:#0066cc;font-size:0.9em;">' +
+        '<img src="https://www.openstreetmap.org/favicon.ico" width="16" height="16" style="vertical-align:middle;" onerror="this.style.display=\'none\'" /> OpenStreetMap</a>' +
+      '</div></div>';
+  }
+
+  function fmtRegDate(s) {
+    if(!s) return '';
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    // DD/MM/YYYY
+    var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m) return parseInt(m[1],10) + '-' + months[parseInt(m[2],10)-1] + '-' + m[3];
+    // YYYY-MM-DD
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return parseInt(m[3],10) + '-' + months[parseInt(m[2],10)-1] + '-' + m[1];
+    return s;
+  }
+
+  var _fieldLabels = {
+    'Mark':'Registration','Manu':'Manufacturer','MTOW':'MTOW (kg)','engnum':'Engine Count',
+    'Engmanu':'Engine Manufacturer','Engtype':'Engine Type','Engmodel':'Engine Model',
+    'Fueltype':'Fuel Type','regType':'Registration Type',
+    'regholdname':'Holder Name','regholdadd1':'Holder Address','regholdadd2':'Holder Address 2',
+    'regholdSuburb':'Holder City','regholdState':'Holder State','regholdPostcode':'Holder Postcode',
+    'regholdCountry':'Holder Country','regholdCommdate':'Holder Commencement',
+    'regopName':'Operator Name','regopadd1':'Operator Address','regopadd2':'Operator Address 2',
+    'regopSuburb':'Operator City','regopState':'Operator State','regopPostcode':'Operator Postcode',
+    'regopCountry':'Operator Country','regopCommdate':'Operator Commencement',
+    'Datefirstreg':'First Registered','gear':'Landing Gear','Airframe':'Airframe Type',
+    'CoAcata':'CoA Category A','CoAcatb':'CoA Category B','CoAcatc':'CoA Category C',
+    'Propmanu':'Propeller Manufacturer','Propmodel':'Propeller Model','Typecert':'Type Certificate',
+    'Countrymanu':'Country of Manufacture','Yearmanu':'Year Manufactured',
+    'Regexpirydate':'Registration Expiry','suspendstatus':'Suspension Status','suspenddate':'Suspension Date',
+    'ICAOtypedesig':'ICAO Type Designator','IDERA_Authorised_Party':'IDERA Authorised Party',
+    'Registration Mark':'Registration','Serial No.':'Serial Number','MCTOW (Kg)':'MCTOW (kg)',
+    'Owner Name':'Owner','Owner Address':'Owner Address','Registered on':'Registered On',
+    'Model Category':'Category','Mode S Code HEX':'Mode S Hex','Mode S Code Binary':'Mode S Binary',
+    'Flight manual no.':'Flight Manual No.'
+  };
+  var _skipFields = {'json_data':1,'mark':1,'manufacturer':1,'type':1,'model':1,'serial':1,'registration':1};
+  var _weightFields = {'MTOW':1,'MCTOW (Kg)':1};
+  var _weightSourceKg = {'MTOW':1,'MCTOW (Kg)':1}; // these source fields are in kg
+  var _dateFields = {'Datefirstreg':1,'regholdCommdate':1,'regopCommdate':1,'Regexpirydate':1,'suspenddate':1,'Registered on':1};
+
+  function fmtWeight(val, sourceIsKg, unit) {
+    var num = parseFloat(val);
+    if(isNaN(num)) return val;
+    if(unit === 'lbs' && sourceIsKg) num = num * 2.20462;
+    else if(unit === 'kg' && !sourceIsKg) num = num / 2.20462;
+    var suffix = unit === 'lbs' ? ' lbs' : ' kg';
+    return Math.round(num).toLocaleString() + suffix;
+  }
+
+  function renderAllFields(obj) {
+    var unit = window._weightUnit || 'lbs';
+    var html = '';
+    for(var key in obj) {
+      if(!obj.hasOwnProperty(key)) continue;
+      var val = obj[key];
+      if(!val || val === '-' || _skipFields[key]) continue;
+      var label = _fieldLabels[key] || key;
+      if(_weightFields[key]) val = fmtWeight(val, !!_weightSourceKg[key], unit);
+      if(_dateFields[key]) val = fmtRegDate(val);
+      html += field(label, val);
+    }
+    return html;
+  }
+
+  function descSdrNature(code) {
+    var m = {'CR':'Cracked','CO':'Corroded','WO':'Worn','BR':'Broken','BU':'Burned','DA':'Damaged',
+      'FA':'Failed','FR':'Fractured','LE':'Leaking','LO':'Loose','MI':'Missing','OT':'Other',
+      'OV':'Overheated','SE':'Seized','UN':'Unserviceable','F':'Failed','O':'Other',
+      'B':'Broken','C':'Corroded','D':'Damaged','H':'Heavy wear','K':'Cracked',
+      'L':'Leaking','M':'Missing','S':'Seized','W':'Worn','E':'Eroded'};
+    return m[(code||'').toUpperCase()] || code || '';
+  }
+  function descSdrStage(code) {
+    var m = {'TO':'Takeoff','CL':'Climb','CR':'Cruise','DE':'Descent','AP':'Approach','LD':'Landing',
+      'TX':'Taxi','PK':'Parked','IN':'Inspection','MX':'Maintenance','GD':'Ground','ST':'Static',
+      'T':'Takeoff','C':'Climb','R':'Cruise','D':'Descent','A':'Approach','L':'Landing',
+      'X':'Taxi','P':'Parked','I':'Inspection','M':'Maintenance','G':'Ground'};
+    return m[(code||'').toUpperCase()] || code || '';
+  }
+  function descSdrDiscovery(code) {
+    var m = {'IN':'Inspection','PI':'Pilot','MX':'Maintenance','OP':'Operator','PX':'Passenger',
+      'FC':'Flight Crew','OT':'Other','I':'Inspection','P':'Pilot','M':'Maintenance',
+      'O':'Operator','V':'Visual inspection','F':'Flight test','D':'NDI/NDT',
+      'S':'Scheduled inspection','U':'Unscheduled inspection'};
+    return m[(code||'').toUpperCase()] || code || '';
+  }
+
+  function fmtDate(s) {
+    if(!s) return '';
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    // YYYY/MM/DD format (CCAR dates)
+    var slashMatch = s.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+    if(slashMatch) {
+      var sy = slashMatch[1], sm = parseInt(slashMatch[2],10), sd = parseInt(slashMatch[3],10);
+      if(sm >= 1 && sm <= 12 && sd >= 1 && sd <= 31) return sd + '-' + months[sm-1] + '-' + sy;
+      return s;
+    }
+    if(/[^0-9]/.test(s)) return s; // Not a pure numeric string, return as-is
+    if(s.length === 6) {
+      // MMYYYY format (medical dates)
+      var mm = parseInt(s.substring(0,2), 10);
+      var yyyy = s.substring(2,6);
+      if(mm < 1 || mm > 12) return s;
+      return months[mm-1] + '-' + yyyy;
+    }
+    if(s.length !== 8) return s;
+    // Detect MMDDYYYY vs YYYYMMDD: if first 2 digits are 01-12 and last 4 are a year, it's MMDDYYYY
+    var first2 = parseInt(s.substring(0,2), 10);
+    var last4 = parseInt(s.substring(4,8), 10);
+    var first4 = parseInt(s.substring(0,4), 10);
+    if(first2 >= 1 && first2 <= 12 && last4 >= 2000 && last4 <= 2099) {
+      // MMDDYYYY format (cert expiry dates)
+      var md = parseInt(s.substring(2,4), 10);
+      if(md >= 1 && md <= 31) return md + '-' + months[first2-1] + '-' + last4;
+    }
+    // YYYYMMDD format
+    var y = s.substring(0,4);
+    var m = parseInt(s.substring(4,6), 10);
+    var d = parseInt(s.substring(6,8), 10);
+    if(isNaN(m) || isNaN(d) || m < 1 || m > 12 || d < 1 || d > 31) return s;
+    return d + '-' + months[m-1] + '-' + y;
+  }
+
+  function esc(s) {
+    if(!s) return '';
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function descCertification(code) {
+    if(!code) return '-';
+    var m = {'1':'Standard','2':'Limited','3':'Restricted','4':'Experimental','5':'Provisional','6':'Multiple Airworthiness','7':'Primary','8':'Special Flight Permit','9':'Light Sport'};
+    var parts = [];
+    for(var i = 0; i < code.length; i++) {
+      var desc = m[code[i]];
+      if(desc && parts.indexOf(desc) < 0) parts.push(desc);
+    }
+    return parts.length > 0 ? parts.join(', ') : code;
+  }
+
+  function descRegion(code) {
+    var m = {'1':'Eastern','2':'Southwest','3':'Central','4':'Western-Pacific','5':'Alaskan','7':'Southern','8':'European','C':'Central','E':'Eastern','GL':'Great Lakes','NE':'New England','NM':'Northwest Mountain','SO':'Southern','SW':'Southwest','WP':'Western-Pacific','S':'Southern','AL':'Alaskan'};
+    return m[(code||'').toUpperCase()] || code || '-';
+  }
+
+  function kgToLbs(s) {
+    if(!s) return '';
+    var n = parseFloat(s);
+    if(isNaN(n) || n === 0) return '';
+    return Math.round(n * 2.20462).toLocaleString();
+  }
+
+  function descCanadianCity(code) {
+    if(!code) return '';
+    var c = code.trim();
+    var m = {
+      'YYZ':'Toronto','YUL':'Montreal','YVR':'Vancouver','YYC':'Calgary','YEG':'Edmonton',
+      'YOW':'Ottawa','YWG':'Winnipeg','YHZ':'Halifax','YQB':'Quebec City','YXE':'Saskatoon',
+      'YQR':'Regina','YYJ':'Victoria','YXU':'London','YKF':'Kitchener-Waterloo',
+      'YHM':'Hamilton','YLW':'Kelowna','YXX':'Abbotsford','YQT':'Thunder Bay',
+      'YFC':'Fredericton','YQM':'Moncton','YSJ':'Saint John','YYT':'St. Johns',
+      'YQG':'Windsor','YKA':'Kamloops','YCD':'Nanaimo','YPR':'Prince Rupert',
+      'YXS':'Prince George','YMM':'Fort McMurray','YQL':'Lethbridge','YMJ':'Moose Jaw',
+      'YPA':'Prince Albert','YQK':'Kenora','YAM':'Sault Ste. Marie','YSB':'Sudbury',
+      'YTS':'Timmins','YZR':'Sarnia','YBR':'Brandon','YZF':'Yellowknife',
+      'YXY':'Whitehorse','YFB':'Iqaluit','YDA':'Dawson City','YZT':'Port Hardy',
+      'YYR':'Goose Bay','YDF':'Deer Lake','YGP':'Gaspe','YRQ':'Trois-Rivieres',
+      'YVO':'Val-d\'Or','YMT':'Chibougamau','YBX':'Blanc-Sablon','YHU':'Montreal (St-Hubert)',
+      'YMX':'Montreal (Mirabel)','YTZ':'Toronto (Billy Bishop)','YKZ':'Toronto (Buttonville)',
+      'YPQ':'Peterborough','YCM':'St. Catharines','YXR':'Earlton','YLD':'Chapleau',
+      'CEP3':'Edmonton (Cooking Lake)','CEZ3':'Edmonton (Villeneuve)',
+      'CYKF':'Kitchener-Waterloo','CYOO':'Oshawa','CZBA':'Burlington'
+    };
+    return m[c.toUpperCase()] || c;
+  }
+
+  function descAircraftCat(code) {
+    var m = {'1':'Land','2':'Sea','3':'Amphibian'};
+    return m[code] || code || '-';
+  }
+
+  function descTypeAircraft(code) {
+    var m = {'1':'Glider','2':'Balloon','3':'Blimp/Dirigible','4':'Fixed Wing Single Engine','5':'Fixed Wing Multi Engine','6':'Rotorcraft','7':'Weight-Shift-Control','8':'Powered Parachute','9':'Gyroplane','H':'Hybrid Lift'};
+    return m[code] || code || '-';
+  }
+
+  function descRegistrantType(code) {
+    var m = {'1':'Individual','2':'Partnership','3':'Corporation','4':'Co-Owned','5':'Government','7':'LLC','8':'Non-Citizen Corporation','9':'Non-Citizen Co-Owned'};
+    return m[code] || code || '-';
+  }
+
+  function descStatus(code) {
+    var m = {'A':'The Triennial Aircraft Registration form was mailed and singed','D':'Canceled','E':'The owner requested cancellation','M':'Aircraft registered to the manufacturer','N':'N-Number assigned but not registered','R':'Registration pending','S':'Second triennial  reminder','T':'Valid Registration','V':'Valid Registration','W':'Certificate of Registration sent','X':'Enforcement Letter','Z':'Permanent Reserved'};
+    return m[code] || code || '-';
+  }
+
+  function descWeight(code) {
+    var m = {'CLASS 1':'Up to 12,499 lbs','CLASS 2':'12,500 - 19,999 lbs','CLASS 3':'20,000 lbs and over','CLASS 4':'UAV up to 55 lbs'};
+    return m[code] || code || '-';
+  }
+
+  function descEngineType(code) {
+    var m = {'0':'None','1':'Reciprocating','2':'Turbo-prop','3':'Turbo-shaft','4':'Turbo-jet','5':'Turbo-fan','6':'Ramjet','7':'2 Cycle','8':'4 Cycle','9':'Unknown','10':'Electric','11':'Rotary'};
+    return m[code] || code || '-';
+  }
+
+  function descCertType(code) {
+    var m = {'P':'Pilot','F':'Flight Instructor','G':'Ground Instructor','M':'Mechanic','R':'Repairman','T':'Control Tower Operator','X':'Parachute Rigger','W':'Flight Engineer','D':'Flight Dispatcher','N':'Flight Navigator','H':'Flight Surgeon','I':'Flight Attendant','E':'Flight Engineer (Turbojet)','A':'Authorized Aircraft Inspector','L':'Repairman (Light Sport)'};
+    return m[(code||'').trim().toUpperCase()] || code || '-';
+  }
+
+  function descCertLevel(code) {
+    var m = {'ATP':'Airline Transport Pilot','C':'Commercial','P':'Private','S':'Sport','R':'Recreational','T':'Student','F':'Flight Instructor','A':'Authorized','I':'Instrument','G':'Ground','M':'Master','1':'Airframe','2':'Powerplant','3':'Airframe & Powerplant'};
+    return m[(code||'').trim().toUpperCase()] || code || '-';
+  }
+
+  // Parse the ratings field
+  // Old format: first element is cert level code, rest are ratings
+  // New format: all elements are ratings (level is in its own DB field)
+  function parseCertRatings(ratingsStr, isNewFormat) {
+    var result = { level: '', ratings: [] };
+    if(!ratingsStr) return result;
+    var parts = ratingsStr.split(/\s*,\s*/);
+    // Certificate level prefixes (single letter, first element)
+    var lvlCodes = {'A':1,'C':1,'P':1,'S':1,'T':1,'V':1,'E':1};
+    // Rating suffix codes
+    var rat = {
+      'ASEL':'Airplane Single Engine Land',
+      'ASES':'Airplane Single Engine Sea',
+      'AMEL':'Airplane Multi-Engine Land',
+      'AMELC':'Airplane Multi-Engine Land (Center Thrust)',
+      'AMES':'Airplane Multi-Engine Sea',
+      'HEL':'Helicopter',
+      'HELGY':'Helicopter/Gyroplane',
+      'GYRO':'Gyroplane',
+      'GL':'Glider',
+      'BAL':'Balloon',
+      'AIR':'Airship',
+      'PLIFT':'Powered Lift',
+      'INSTA':'Instrument Airplane',
+      'INSTH':'Instrument Helicopter',
+      'INSTI':'Instrument (Airplane/Helicopter)',
+      'INSTP':'Instrument Powered Lift',
+      'SPORT':'Sport',
+      'ASE':'Airplane Single Engine',
+      'AME':'Airplane Multi-Engine',
+      'ASME':'Airplane Single & Multi-Engine',
+      'SUAS':'Small Unmanned Aircraft Systems'
+    };
+    // Certificate level descriptions
+    var lvl = {
+      'A':'ATP', 'C':'Commercial', 'P':'Private', 'S':'Sport', 'T':'Student',
+      'F':'Instructor', 'V':'Sport Pilot'
+    };
+    // Special full-code mappings
+    var special = {
+      'M/AIRFR':'Airframe', 'M/POWER':'Powerplant',
+      'L/MAINT':'Light Sport Maintenance', 'L/INSPT':'Light Sport Inspection',
+      'G/ADV':'Advanced Ground Instructor', 'G/BASIC':'Basic Ground Instructor', 'G/INST':'Instrument Ground Instructor',
+      'E/JET':'Turbojet', 'E/RECIP':'Reciprocating', 'E/TPROP':'Turboprop',
+      'X/JET':'Turbojet', 'X/RECIP':'Reciprocating', 'X/TPROP':'Turboprop',
+      'W/BACK':'Back', 'W/CHEST':'Chest', 'W/LAP':'Lap', 'W/SEAT':'Seat',
+      'U/BACK':'Back', 'U/CHEST':'Chest', 'U/LAP':'Lap', 'U/SEAT':'Seat',
+      'U/SUAS':'Small UAS', 'W':'Pack', 'U':'Pack'
+    };
+    for(var i = 0; i < parts.length; i++) {
+      var p = parts[i].trim();
+      if(!p) continue;
+      var key = p.toUpperCase();
+      // Skip date entries (MMDDYYYY)
+      if(/^\d{8}$/.test(key)) continue;
+      // Old format: first single-letter code is the cert level
+      if(!isNewFormat && i === 0 && key.length === 1 && lvlCodes[key]) {
+        result.level = key;
+        continue;
+      }
+      // Skip standalone level letters (redundant in either format)
+      if(key.length === 1 && lvlCodes[key]) continue;
+      // Special codes
+      if(special[key]) { result.ratings.push(special[key]); continue; }
+      // Prefix/suffix pattern
+      var slash = key.indexOf('/');
+      if(slash > 0) {
+        var pre = key.substring(0, slash);
+        var suf = key.substring(slash + 1);
+        var sufDesc = rat[suf];
+        if(sufDesc) {
+          var preDesc = lvl[pre];
+          result.ratings.push(preDesc ? preDesc + ' \u2013 ' + sufDesc : sufDesc);
+        } else {
+          // Type rating (aircraft-specific like B-737, CE-500)
+          result.ratings.push((lvl[pre] || pre) + ' \u2013 ' + suf + ' Type');
+        }
+      } else {
+        result.ratings.push(p);
+      }
+    }
+    return result;
+  }
+
+  function fmtNtsbDate(s) {
+    if(!s) return '';
+    // NTSB dates may be in various formats: MM/DD/YYYY, YYYY-MM-DD, or datetime strings
+    var d = new Date(s);
+    if(isNaN(d.getTime())) return s;
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return d.getDate() + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+  }
+
+  function descNtsbDamage(code) {
+    if(!code) return '';
+    var m = {'DEST':'Destroyed','SUBS':'Substantial','MINR':'Minor','NONE':'None'};
+    return m[(code||'').toUpperCase()] || code;
+  }
+
+  function descNtsbInjury(code) {
+    if(!code) return '';
+    var m = {'FATL':'Fatal','SERS':'Serious','MINR':'Minor','NONE':'None'};
+    return m[(code||'').toUpperCase()] || code;
+  }
+
+  function descNtsbPhase(code) {
+    if(!code) return '';
+    var m = {
+      'T/O':'Takeoff','TAXI':'Taxi','LDG':'Landing','CRZ':'Cruise','APPR':'Approach',
+      'CLMB':'Climb','DSCN':'Descent','MNVR':'Maneuvering','STND':'Standing',
+      'GO-AR':'Go-Around','HOVR':'Hover','EMRG':'Emergency','OTHER':'Other',
+      'UNK':'Unknown','GOA':'Go-Around','T/OR':'Takeoff Run','TKOF':'Takeoff',
+      'LNDG':'Landing'
+    };
+    return m[(code||'').toUpperCase()] || code;
+  }
+
+  function descNtsbLight(code) {
+    if(!code) return '';
+    var m = {'DAYL':'Daylight','DAWN':'Dawn','DUSK':'Dusk','NITE':'Night','DARK':'Dark (Night)','NBRT':'Night (Bright)'};
+    return m[(code||'').toUpperCase()] || code;
+  }
+
+  function ratingsToHtml(ratings) {
+    var html = '';
+    for(var i = 0; i < ratings.length; i++) {
+      html += '<span>' + esc(ratings[i]) + '</span>';
+    }
+    return html;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Registration Data - Web Admin</title>
+        @head.html@
+        <!-- [[ BUNDLE END ]] -->
+        <script src="script/Strings.js"></script>
+        <script src="script/Strings.Server.js"></script>
+        <script src="script/bootstrap-helper.js"></script>
+        <script src="RegistrationDataPluginOptions.js"></script>
+    </head>
+    <body>
+        <div id="page-container">
+            <div id="content" class="container-fluid">
+                <div class="row row-offcanvas row-offcanvas-left">
+                    <div class="col-xs-12 col-sm-9">
+                        <h1 class="page-header">Registration Data</h1>
+
+                        <div id="failure-message" class="alert alert-danger"></div>
+
+                        <div class="form-horizontal">
+
+                            <!-- General Settings -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>General</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="col-sm-offset-3 col-sm-9 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: Enabled" /> Enabled</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label">Database Folder</label>
+                                        <div class="col-sm-9">
+                                            <input type="text" class="form-control" data-bind="value: DatabaseFolder" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Display Options -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>Display</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="col-sm-4 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: OpenInNewTab" /> Open in new tab</label>
+                                        </div>
+                                        <div class="col-sm-4 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: FetchAircraftPhotos" /> Fetch photos</label>
+                                        </div>
+                                        <div class="col-sm-4 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: DuckDuckGoImageFallback" /> DuckDuckGo image fallback</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label">Weight units:</label>
+                                        <div class="col-sm-3">
+                                            <select class="form-control" data-bind="value: WeightUnit">
+                                                <option value="lbs">Pounds (lbs)</option>
+                                                <option value="kg">Kilograms (kg)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pilot Matching -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>Pilot Matching</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <label class="col-sm-4 control-label">Fuzzy match distance</label>
+                                        <div class="col-sm-2">
+                                            <input type="number" class="form-control" data-bind="value: FuzzyMatchMaxDistance" min="0" max="5" />
+                                        </div>
+                                        <label class="col-sm-4 control-label">Green icon min. points</label>
+                                        <div class="col-sm-2">
+                                            <input type="number" class="form-control" data-bind="value: PilotMatchThreshold" min="0" max="500" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-sm-offset-4 col-sm-8 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: IncludeStateMatch" /> Include state in matching</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Icon Coloring -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>Icon Coloring</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <label class="col-sm-4 control-label">Ownship registrations (comma sep.)</label>
+                                        <div class="col-sm-6">
+                                            <input type="text" class="form-control" data-bind="value: PinkRegistration" placeholder="e.g. N12345, N67890" style="text-transform:uppercase;" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-4 control-label">Highlight ICAO models (comma sep.)</label>
+                                        <div class="col-sm-6">
+                                            <input type="text" class="form-control" data-bind="value: HighlightModelIcao" placeholder="e.g. RV14, RV7" style="text-transform:uppercase;" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-4 control-label">Show colors on map for:</label>
+                                        <div class="col-sm-8">
+                                            <label class="checkbox-inline"><input type="checkbox" data-bind="checked: ShowModelColor" /> <span class="label" style="background:#5DADE2;">Model</span></label>
+                                            <label class="checkbox-inline"><input type="checkbox" data-bind="checked: ShowPilotColor" /> <span class="label" style="background:#00CC00;">Pilot</span></label>
+                                            <label class="checkbox-inline"><input type="checkbox" data-bind="checked: ShowNtsbColor" /> <span class="label" style="background:#FF0000;">NTSB</span></label>
+                                            <label class="checkbox-inline"><input type="checkbox" data-bind="checked: ShowSdrColor" /> <span class="label" style="background:#9B59B6;">SDR</span></label>
+                                            <label class="checkbox-inline"><input type="checkbox" data-bind="checked: ShowLaddIndicator" /> <span class="label" data-bind="style: {backgroundColor: LaddColor}">LADD</span></label>
+                                            <span style="margin-left:10px;color:#888;">LADD color:</span>
+                                            <select class="form-control input-sm" style="width:auto;display:inline-block;margin-left:4px;" data-bind="value: LaddColor">
+                                                <option value="#e67e22">Orange</option>
+                                                <option value="#FF0000">Red</option>
+                                                <option value="#00CC00">Green</option>
+                                                <option value="#9B59B6">Purple</option>
+                                                <option value="#5DADE2">Blue</option>
+                                                <option value="#FF69B4">Pink</option>
+                                                <option value="#795548">Brown</option>
+                                                <option value="#607D8B">Gray</option>
+                                            </select>
+                                            <!-- ko if: LaddColor() === '#FF0000' || LaddColor() === '#00CC00' || LaddColor() === '#9B59B6' || LaddColor() === '#5DADE2' || LaddColor() === '#FF69B4' -->
+                                            <small class="text-warning" style="margin-left:6px;">Note: may conflict with icon colors</small>
+                                            <!-- /ko -->
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-4 control-label">Color priority (high to low)</label>
+                                        <div class="col-sm-6">
+                                            <div id="priority-list" style="display:inline-block;"></div>
+                                            <p class="help-block" style="margin-top:4px;"><span class="label" style="background:#FFD700;color:#333;">Selected</span> is always highest</p>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-4 control-label">List row coloring:</label>
+                                        <div class="col-sm-8">
+                                            <select class="form-control" style="width:auto;display:inline-block;" data-bind="value: RowColorMode">
+                                                <option value="row">Entire row</option>
+                                                <option value="reg">Registration only</option>
+                                                <option value="call">Callsign only</option>
+                                                <option value="reg,call">Registration + Callsign</option>
+                                            </select>
+                                            <label class="checkbox-inline" style="margin-left:12px;"><input type="checkbox" data-bind="checked: IncludeModelField" /> Include model field for model matches</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Database Downloads -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>Database Downloads</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label">Status</label>
+                                        <div class="col-sm-9">
+                                            <p class="form-control-static" data-bind="text: DownloadStatus"></p>
+                                        </div>
+                                    </div>
+                                    <table class="table table-condensed table-bordered" style="margin-bottom:10px;">
+                                        <thead>
+                                            <tr><th>Database</th><th>Last Download</th><th>Interval (days)</th><th></th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>FAA Aircraft</td>
+                                                <td data-bind="text: LastAircraftDownload"></td>
+                                                <td><input type="number" class="form-control input-sm" style="width:80px;" data-bind="value: AircraftUpdateIntervalDays" min="1" max="365" /></td>
+                                                <td><button type="button" class="btn btn-xs btn-default" data-bind="click: $.proxy(pageHandler.downloadAircraft, pageHandler), disable: IsDownloading">Download</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>FAA Airmen</td>
+                                                <td data-bind="text: LastAirmenDownload"></td>
+                                                <td><input type="number" class="form-control input-sm" style="width:80px;" data-bind="value: AirmenUpdateIntervalDays" min="1" max="365" /></td>
+                                                <td><button type="button" class="btn btn-xs btn-default" data-bind="click: $.proxy(pageHandler.downloadAirmen, pageHandler), disable: IsDownloading">Download</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>CCAR (Canada)</td>
+                                                <td data-bind="text: LastCcarDownload"></td>
+                                                <td><input type="number" class="form-control input-sm" style="width:80px;" data-bind="value: CcarUpdateIntervalDays" min="1" max="365" /></td>
+                                                <td><button type="button" class="btn btn-xs btn-default" data-bind="click: $.proxy(pageHandler.downloadCcar, pageHandler), disable: IsDownloading">Download</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>NTSB Accidents</td>
+                                                <td data-bind="text: LastNtsbDownload"></td>
+                                                <td><input type="number" class="form-control input-sm" style="width:80px;" data-bind="value: NtsbUpdateIntervalDays" min="1" max="365" /></td>
+                                                <td><button type="button" class="btn btn-xs btn-default" data-bind="click: $.proxy(pageHandler.downloadNtsb, pageHandler), disable: IsDownloading">Download</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>FAA SDR</td>
+                                                <td data-bind="text: LastSdrDownload"></td>
+                                                <td><input type="number" class="form-control input-sm" style="width:80px;" data-bind="value: SdrUpdateIntervalDays" min="1" max="365" /></td>
+                                                <td><button type="button" class="btn btn-xs btn-default" data-bind="click: $.proxy(pageHandler.downloadSdr, pageHandler), disable: IsDownloading">Download</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>CASA (Australia)</td>
+                                                <td data-bind="text: LastCasaDownload"></td>
+                                                <td><input type="number" class="form-control input-sm" style="width:80px;" data-bind="value: CasaUpdateIntervalDays" min="1" max="365" /></td>
+                                                <td><button type="button" class="btn btn-xs btn-default" data-bind="click: $.proxy(pageHandler.downloadCasa, pageHandler), disable: IsDownloading">Download</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>CAA (New Zealand)</td>
+                                                <td data-bind="text: LastNzcaaDownload"></td>
+                                                <td><input type="number" class="form-control input-sm" style="width:80px;" data-bind="value: NzcaaUpdateIntervalDays" min="1" max="365" /></td>
+                                                <td><button type="button" class="btn btn-xs btn-default" data-bind="click: $.proxy(pageHandler.downloadNzcaa, pageHandler), disable: IsDownloading">Download</button></td>
+                                            </tr>
+                                            <tr>
+                                                <td>LADD List</td>
+                                                <td>Sep 2022 (embedded)</td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label">Records</label>
+                                        <div class="col-sm-9">
+                                            <p class="form-control-static" data-bind="text: DatabaseStats"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Download URLs -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>Download URLs</strong> <small class="text-muted">(leave blank for defaults)</small></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">Aircraft</label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" data-bind="value: AircraftDownloadUrl" placeholder="Default" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">Airmen</label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" data-bind="value: AirmenDownloadUrl" placeholder="Default" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">CCAR</label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" data-bind="value: CcarDownloadUrl" placeholder="Default" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">NTSB</label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" data-bind="value: NtsbDownloadUrl" placeholder="Default" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">CASA</label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" data-bind="value: CasaDownloadUrl" placeholder="Default" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <hr />
+
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <button type="button" class="btn btn-info" data-bind="click: $.proxy(pageHandler.save, pageHandler)">
+                                    Save
+                                </button>
+                            </div>
+                            <div class="col-sm-10" data-bind="visible: SaveAttempted">
+                                <div class="alert alert-success">
+                                    <span data-bind="text: SavedMessage"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <p class="text-muted small">
+                            <strong>About this plugin:</strong>
+                            Enriches aircraft details on the map with registration, owner, pilot, and
+                            incident records pulled from FAA, NTSB, FAA SDR, CASA (Australia),
+                            NZCAA (New Zealand), and CCAR (China) databases. Use the Database
+                            Downloads section above to fetch the latest source files.
+                        </p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            $(document).on('ready', function () {
+                Bootstrap.Helper.decorateBootstrapElements();
+                window.pageHandler = new VRS.WebAdmin.RegistrationDataPluginOptions.PageHandler();
+            })
+        </script>
+    </body>
+</html>
