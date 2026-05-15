@@ -66,12 +66,70 @@ A collection of plugins for [Virtual Radar Server](http://www.virtualradarserver
 
 > Serves map tiles to the VRS web UI from local [`.mbtiles`](https://github.com/mapbox/mbtiles-spec) files, so the map works offline or with self-hosted tile sources (FAA sectional / IFR low / IFR high charts, custom basemaps, etc.). Drop one or more `.mbtiles` files into a folder, point the plugin at it, and each file appears as a selectable base map with an opacity slider.
 
-## Building
+## Installation
+
+Pre-built deployment archives are tracked in this repository — one `<Name>.zip` per plugin at the repo root. Each archive contains a single top-level folder named after the plugin (e.g. `TileServerMBTiles/`), holding the plugin DLL, its manifest XML, and any `Web/` assets.
+
+The plugins are AnyCPU .NET Framework 4.8 assemblies, so the same archive installs on both 32-bit and 64-bit Windows VRS and on Mono (Raspberry Pi, other Linux).
+
+### Windows installation
+
+1. **Locate VRS's `Plugins` folder.** On a default install this is `C:\Program Files\VirtualRadar Server\Plugins\` (alongside `VirtualRadar.exe`). If you're not sure, open VRS → **Tools → Plugins**; the dialog shows the folder it scans.
+2. **Extract the zip** (e.g. `TileServerMBTiles.zip`) into that `Plugins\` folder. The archive's top-level folder lands directly under `Plugins\`, so you should end up with e.g. `Plugins\TileServerMBTiles\VirtualRadar.Plugin.TileServerMBTiles.dll`.
+3. **Restart Virtual Radar Server.**
+4. Open **Tools → Plugins** again — the new plugin should be listed. Click **Options** to configure it.
+
+To update a plugin, stop VRS, delete the existing `Plugins\<Name>\` folder, extract the new zip, and start VRS again.
+
+### Mono / Raspberry Pi installation
+
+On a typical Pi VRS install the plugins folder is `~/VirtualRadar/Plugins/` (or wherever your VRS lives). Confirm by checking the VRS log on startup, which prints the plugin folder it scans.
+
+1. **Copy the zip to the Pi:**
+
+   ```sh
+   scp TileServerMBTiles.zip pi@stratux:~/
+   ```
+
+2. **Extract it into VRS's `Plugins/` folder.** Install `unzip` first if it isn't present (`sudo apt install unzip`):
+
+   ```sh
+   cd ~/VirtualRadar/Plugins/
+   unzip ~/TileServerMBTiles.zip
+   ```
+
+   You should end up with e.g. `~/VirtualRadar/Plugins/TileServerMBTiles/VirtualRadar.Plugin.TileServerMBTiles.dll`.
+
+3. **Restart Virtual Radar Server** — `sudo systemctl restart virtualradar`, or however your install starts it.
+
+#### Plugin-specific Mono prerequisites
+
+Most plugins have no extra package requirements on Mono — they just need a working VRS install. A few do:
+
+- **RegistrationData** — the NTSB accident database is published as a Microsoft Access `.mdb` file. On Mono the plugin shells out to `mdb-export` from the `mdbtools` package:
+
+  ```sh
+  sudo apt install mdbtools
+  ```
+
+  If you skip this, all other RegistrationData features (FAA, CCAR, CASA, NZCAA, pilot matching) still work — only NTSB lookups will fail.
+
+- **TileServerMBTiles** — the overzoom feature (rendering tiles beyond an `.mbtiles` file's stored maximum zoom) uses `System.Drawing.Bitmap`, which on Mono needs libgdiplus:
+
+  ```sh
+  sudo apt install libgdiplus
+  ```
+
+  Tile serving at native zoom levels works fine without it — install only if you want to zoom in past a chart's intended scale.
+
+- **Stratux** — needs network access from the Pi running VRS to the Stratux device's HTTP situation feed (default `http://192.168.10.1/getSituation`).
+
+## Building from source
 
 Each plugin builds as a single .NET Framework 4.8 DLL. Requirements:
 
 - Visual Studio 2015 or later, **or** Build Tools for Visual Studio (any edition with the .NET desktop workload).
-- A local copy of Virtual Radar Server 3.x for the referenced `VirtualRadar.Interface.dll` / `VirtualRadar.Localisation.dll` / `VirtualRadar.WinForms.dll`. The csproj files reference them via `..\Plugin.CustomLinks\bin\Debug\` — adjust the hint paths if your VRS install lives elsewhere.
+- A local copy of Virtual Radar Server 3.x for the referenced `VirtualRadar.Interface.dll` / `VirtualRadar.Localisation.dll` / `VirtualRadar.WinForms.dll`. The csproj files reference them via `..\Plugin.CustomLinks\bin\Debug\` — drop those three DLLs from your VRS install into `Plugin.CustomLinks\bin\Debug\` before the first build, or edit the `<HintPath>` entries.
 
 Per-plugin build scripts are in the repo root:
 
@@ -88,12 +146,4 @@ build-TileServerMBTiles.bat
 
 Each one calls `_build-plugin.bat`, which locates MSBuild (via `vswhere`, with explicit fallbacks for VS 2017/2019/2022 and standalone MSBuild 14.0) and rebuilds the plugin in the appropriate Debug/Release configuration.
 
-## Packaging for deployment
-
-`build-plugin-zips.bat` packages each compiled plugin into a `.tar.gz` under `dist/`, containing the DLL, the manifest XML, and any `Web/` assets. On the target machine, from inside the VRS `Plugins/` folder:
-
-```sh
-tar xzf TileServerMBTiles.tar.gz
-```
-
-The archives use `root:root` ownership and 0644/0755 modes so the web assets are traversable when extracted on Linux / Raspberry Pi.
+After building, `build-deployment-zips.bat` repackages the freshly built DLLs into the `<Name>.zip` deployment archives in the repo root.
