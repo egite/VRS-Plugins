@@ -22,7 +22,7 @@ A collection of plugins for [Virtual Radar Server](http://www.virtualradarserver
 
 ### RegistrationData
 
-> Adds a per-aircraft lookup page to VRS plus configurable highlighting in the aircraft list, all backed by an embedded SQLite database that the plugin downloads and refreshes on a schedule from public sources.
+> Adds a per-aircraft lookup page to VRS plus configurable highlighting in the aircraft list, all backed by an embedded SQLite database that the plugin downloads and refreshes on a schedule from public sources.  **Requires network access for first use to download databases.** Later database updates also require network access. **Note:  When this plugin first starts, it will immediately begin downloading the databases and processing them.  This will spike the cpu usage and can take an hour to complete on a Pi 3.**
 >
 > **Data sources** (each independently scheduled and updatable):
 >
