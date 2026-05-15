@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Custom Links - Web Admin</title>
+        @head.html@
+        <!-- [[ BUNDLE END ]] -->
+        <script src="script/Strings.js"></script>
+        <script src="script/Strings.Server.js"></script>
+        <script src="script/bootstrap-helper.js"></script>
+        <script src="CustomLinksPluginOptions.js"></script>
+    </head>
+    <body>
+        <div id="page-container">
+            <div id="content" class="container-fluid">
+                <div class="row row-offcanvas row-offcanvas-left">
+                    <div class="col-xs-12 col-sm-9">
+                        <h1 class="page-header">Custom Links</h1>
+
+                        <div id="failure-message" class="alert alert-danger"></div>
+
+                        <div class="form-horizontal">
+
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>General</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="col-sm-offset-3 col-sm-9 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: Enabled" /> Enabled</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>Links</strong></div>
+                                <div class="panel-body">
+                                    <table class="table table-condensed table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>URL</th>
+                                                <th>Prefix</th>
+                                                <th style="width:60px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody data-bind="foreach: Links">
+                                            <tr>
+                                                <td><input type="text" class="form-control input-sm" data-bind="value: Name" /></td>
+                                                <td><input type="text" class="form-control input-sm" data-bind="value: Url" /></td>
+                                                <td><input type="text" class="form-control input-sm" data-bind="value: ConditionPrefix" style="width:80px;" /></td>
+                                                <td><button type="button" class="btn btn-xs btn-danger" data-bind="click: $.proxy(pageHandler.removeLink, pageHandler)">Remove</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <button type="button" class="btn btn-sm btn-default" data-bind="click: $.proxy(pageHandler.addLink, pageHandler)">Add Link</button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <hr />
+
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <button type="button" class="btn btn-info" data-bind="click: $.proxy(pageHandler.save, pageHandler)">
+                                    Save
+                                </button>
+                            </div>
+                            <div class="col-sm-10" data-bind="visible: SaveAttempted">
+                                <div class="alert alert-success">
+                                    <span data-bind="text: SavedMessage"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <p class="text-muted small">
+                            <strong>About this plugin:</strong>
+                            Adds user-configurable hyperlinks to the aircraft detail panel in the VRS web UI &mdash;
+                            handy for quickly opening external sites (FlightAware, photo searches, registration
+                            lookups, etc.) for the selected aircraft.
+                        </p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            $(document).on('ready', function () {
+                Bootstrap.Helper.decorateBootstrapElements();
+                window.pageHandler = new VRS.WebAdmin.CustomLinksPluginOptions.PageHandler();
+            })
+        </script>
+    </body>
+</html>

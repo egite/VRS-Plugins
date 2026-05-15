@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Logo Markers - Web Admin</title>
+        @head.html@
+        <!-- [[ BUNDLE END ]] -->
+        <script src="script/Strings.js"></script>
+        <script src="script/Strings.Server.js"></script>
+        <script src="script/bootstrap-helper.js"></script>
+        <script src="LogoMarkersPluginOptions.js"></script>
+    </head>
+    <body>
+        <div id="page-container">
+            <div id="content" class="container-fluid">
+                <div class="row row-offcanvas row-offcanvas-left">
+                    <div class="col-xs-12 col-sm-9">
+                        <h1 class="page-header">Logo Markers</h1>
+
+                        <div id="failure-message" class="alert alert-danger"></div>
+
+                        <div class="form-horizontal">
+
+                            <!-- General Settings -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>General</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="col-sm-offset-3 col-sm-9 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: Enabled" /> Enabled</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-sm-offset-3 col-sm-9 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: ServerSideCompositing" /> Server-side compositing</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <hr />
+
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <button type="button" class="btn btn-info" data-bind="click: $.proxy(pageHandler.save, pageHandler)">
+                                    Save
+                                </button>
+                            </div>
+                            <div class="col-sm-10" data-bind="visible: SaveAttempted">
+                                <div class="alert alert-success">
+                                    <span data-bind="text: SavedMessage"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <p class="text-muted small">
+                            <strong>About this plugin:</strong>
+                            Replaces the default aircraft SVG icons on the map with composite images
+                            combining the operator's logo and a heading arrow, making operators
+                            identifiable at a glance.
+                        </p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            $(document).on('ready', function () {
+                Bootstrap.Helper.decorateBootstrapElements();
+                window.pageHandler = new VRS.WebAdmin.LogoMarkersPluginOptions.PageHandler();
+            })
+        </script>
+    </body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Stratux GPS - Web Admin</title>
+        @head.html@
+        <!-- [[ BUNDLE END ]] -->
+        <script src="script/Strings.js"></script>
+        <script src="script/Strings.Server.js"></script>
+        <script src="script/bootstrap-helper.js"></script>
+        <script src="StratuxPluginOptions.js"></script>
+    </head>
+    <body>
+        <div id="page-container">
+            <div id="content" class="container-fluid">
+                <div class="row row-offcanvas row-offcanvas-left">
+                    <div class="col-xs-12 col-sm-9">
+                        <h1 class="page-header">Stratux GPS</h1>
+
+                        <div id="failure-message" class="alert alert-danger"></div>
+
+                        <div class="form-horizontal">
+
+                            <!-- General Settings -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>General</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="col-sm-offset-3 col-sm-9 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: Enabled" /> Enabled</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Connection Settings -->
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><strong>Stratux Connection</strong></div>
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label">Stratux Address</label>
+                                        <div class="col-sm-6">
+                                            <input type="text" class="form-control" data-bind="value: StratuxAddress" />
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <span class="help-block" data-bind="visible: DetectedAddress">
+                                                Detected: <strong data-bind="text: DetectedAddress"></strong>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label">Port</label>
+                                        <div class="col-sm-3">
+                                            <input type="number" class="form-control" data-bind="value: StratuxPort" min="1" max="65535" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label">Poll Interval (ms)</label>
+                                        <div class="col-sm-3">
+                                            <input type="number" class="form-control" data-bind="value: PollIntervalMilliseconds" min="250" max="10000" step="250" />
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="help-block">How often to fetch GPS position from Stratux (250-10000ms)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <hr />
+
+                        <div class="row">
+                            <div class="col-sm-2">
+                                <button type="button" class="btn btn-info" data-bind="click: $.proxy(pageHandler.save, pageHandler)">
+                                    Save
+                                </button>
+                            </div>
+                            <div class="col-sm-10" data-bind="visible: SaveAttempted">
+                                <div class="alert alert-success">
+                                    <span data-bind="text: SavedMessage"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <p class="text-muted small">
+                            <strong>About this plugin:</strong>
+                            Connects to a Stratux ADS-B/GPS device on your local network, polls its
+                            <code>/getSituation</code> endpoint for live GPS position, and feeds that
+                            into VRS as the current location &mdash; so the map's ownship marker tracks
+                            your aircraft instead of staying anchored to a fixed receiver site.
+                        </p>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            $(document).on('ready', function () {
+                Bootstrap.Helper.decorateBootstrapElements();
+                window.pageHandler = new VRS.WebAdmin.StratuxPluginOptions.PageHandler();
+            })
+        </script>
+    </body>
+</html>
