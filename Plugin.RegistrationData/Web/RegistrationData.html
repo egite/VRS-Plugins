@@ -969,12 +969,42 @@
   }
 
   function descCertType(code) {
-    var m = {'P':'Pilot','F':'Flight Instructor','G':'Ground Instructor','M':'Mechanic','R':'Repairman','T':'Control Tower Operator','X':'Parachute Rigger','W':'Flight Engineer','D':'Flight Dispatcher','N':'Flight Navigator','H':'Flight Surgeon','I':'Flight Attendant','E':'Flight Engineer (Turbojet)','A':'Authorized Aircraft Inspector','L':'Repairman (Light Sport)'};
+    // Per FAA Airmen Certification Branch HelpComm.pdf — there is no "Flight Attendant" type
+    var m = {
+      'P':'Pilot',
+      'F':'Flight Instructor',
+      'A':'Authorized Aircraft Instructor',
+      'U':'Remote Pilot',
+      'E':'Flight Engineer',
+      'H':'Flight Engineer (Special Purpose – Lessee)',
+      'X':'Flight Engineer (Foreign Based)',
+      'G':'Ground Instructor',
+      'M':'Mechanic',
+      'T':'Control Tower Operator',
+      'R':'Repairman',
+      'I':'Repairman (Experimental Aircraft Builder)',
+      'L':'Repairman (Light Sport Aircraft)',
+      'W':'Parachute Rigger',
+      'D':'Aircraft Dispatcher',
+      'N':'Flight Navigator',
+      'J':'Flight Navigator (Special Purpose – Lessee)'
+    };
     return m[(code||'').trim().toUpperCase()] || code || '-';
   }
 
   function descCertLevel(code) {
-    var m = {'ATP':'Airline Transport Pilot','C':'Commercial','P':'Private','S':'Sport','R':'Recreational','T':'Student','F':'Flight Instructor','A':'Authorized','I':'Instrument','G':'Ground','M':'Master','1':'Airframe','2':'Powerplant','3':'Airframe & Powerplant'};
+    // Per FAA HelpComm.pdf: Pilot levels are A C P V T S; Rigger levels are U W.
+    // Other cert types (F, G, M, R, I, L, D, N, T, etc.) leave the level field blank.
+    var m = {
+      'A':'Airline Transport Pilot',
+      'C':'Commercial',
+      'P':'Private',
+      'V':'Recreational',
+      'T':'Sport',
+      'S':'Student',
+      'U':'Master Parachute Rigger',
+      'W':'Senior Parachute Rigger'
+    };
     return m[(code||'').trim().toUpperCase()] || code || '-';
   }
 
@@ -1011,10 +1041,10 @@
       'ASME':'Airplane Single & Multi-Engine',
       'SUAS':'Small Unmanned Aircraft Systems'
     };
-    // Certificate level descriptions
+    // Certificate level descriptions (rating-prefix letters)
     var lvl = {
-      'A':'ATP', 'C':'Commercial', 'P':'Private', 'S':'Sport', 'T':'Student',
-      'F':'Instructor', 'V':'Sport Pilot'
+      'A':'ATP', 'C':'Commercial', 'P':'Private', 'V':'Recreational',
+      'T':'Sport', 'S':'Student', 'F':'Instructor'
     };
     // Special full-code mappings
     var special = {
