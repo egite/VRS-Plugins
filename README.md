@@ -171,3 +171,17 @@ After building, `build-deployment-zips.bat` repackages the freshly built DLLs in
 ## Authorship
 
 All code in this repository was authored by [Claude Code](https://claude.com/claude-code) (Anthropic), directed and reviewed by the repository owner.
+
+## Screenshots of some of the plugins
+
+![Image](Screenshots/map-defaults.png)
+
+![Image](Screenshots/map-liveatc.png)
+
+![Image](Screenshots/map-sec.png)
+
+![Image](Screenshots/map-lo.png)
+
+![Image](Screenshots/plane-lookup1.png)
+
+![Image](Screenshots/plane-lookup2.png)
