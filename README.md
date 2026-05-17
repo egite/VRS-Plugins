@@ -167,3 +167,7 @@ build-TileServerMBTiles.bat
 Each one calls `_build-plugin.bat`, which locates MSBuild (via `vswhere`, with explicit fallbacks for VS 2017/2019/2022 and standalone MSBuild 14.0) and rebuilds the plugin in the appropriate Debug/Release configuration.
 
 After building, `build-deployment-zips.bat` repackages the freshly built DLLs into the `<Name>.zip` deployment archives in the repo root.
+
+## Authorship
+
+All code in this repository was authored by [Claude Code](https://claude.com/claude-code) (Anthropic), directed and reviewed by the repository owner.
