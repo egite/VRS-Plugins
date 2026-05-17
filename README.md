@@ -134,6 +134,8 @@ Most plugins have no extra package requirements on Mono — they just need a wor
 
      If you skip this, all other RegistrationData features (FAA, CCAR, CASA, NZCAA, pilot matching) still work — only NTSB lookups will fail.
 
+- **RegistrationData** users should also use [E's VRS Database Updater](https://github.com/egite/E-s-VRS-Database-Updater) to create a full database of aircraft rather than using VRS' default.
+
 - **TileServerMBTiles** — the overzoom feature (rendering tiles beyond an `.mbtiles` file's stored maximum zoom) uses `System.Drawing.Bitmap`, which on Mono needs libgdiplus:
 
   ```sh
