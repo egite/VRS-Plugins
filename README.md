@@ -106,13 +106,33 @@ On a typical Pi VRS install the plugins folder is `~/VirtualRadar/Plugins/` (or 
 
 Most plugins have no extra package requirements on Mono — they just need a working VRS install. A few do:
 
-- **RegistrationData** — the NTSB accident database is published as a Microsoft Access `.mdb` file. On Mono the plugin shells out to `mdb-export` from the `mdbtools` package:
+- **RegistrationData** needs two things on Mono:
 
-  ```sh
-  sudo apt install mdbtools
-  ```
+  1. **TLS root certificates** so the HTTPS registry downloads (FAA, CCAR, CASA, NZCAA, NTSB, SDR) succeed. Mono on Linux validates server certs against its own trust store rather than `/etc/ssl/certs/`, and on a fresh Pi that store is usually empty or stale — every download fails at the TLS handshake (typically `SecureChannelFailure` or "The authentication or decryption has failed") until you populate it:
 
-  If you skip this, all other RegistrationData features (FAA, CCAR, CASA, NZCAA, pilot matching) still work — only NTSB lookups will fail.
+     ```sh
+     # Refresh the OS CA bundle
+     sudo apt-get update
+     sudo apt-get install --reinstall ca-certificates
+     sudo update-ca-certificates
+
+     # Push it into Mono's machine-wide trust store
+     sudo cert-sync /etc/ssl/certs/ca-certificates.crt
+
+     # Also push it into the per-user store for the user that runs VRS
+     # (run AS that user, e.g. `pi`, without sudo)
+     cert-sync --user /etc/ssl/certs/ca-certificates.crt
+     ```
+
+     Restart VRS after running these — Mono reads the trust store at process startup.
+
+  2. **`mdbtools`** for NTSB. The NTSB accident database is published as a Microsoft Access `.mdb` file; on Mono the plugin shells out to `mdb-export`:
+
+     ```sh
+     sudo apt install mdbtools
+     ```
+
+     If you skip this, all other RegistrationData features (FAA, CCAR, CASA, NZCAA, pilot matching) still work — only NTSB lookups will fail.
 
 - **TileServerMBTiles** — the overzoom feature (rendering tiles beyond an `.mbtiles` file's stored maximum zoom) uses `System.Drawing.Bitmap`, which on Mono needs libgdiplus:
 
