@@ -56,9 +56,9 @@ A collection of plugins for [Virtual Radar Server](http://www.virtualradarserver
 
 ### SnapToOwnship
 
-> Adds a control to the web UI that snaps and centres the map on the configured ownship position. Designed to work alongside the Stratux plugin so you can re-centre on your aircraft with one click after panning around.
+> Adds a control to the web UI that snaps and centres the map on the configured ownship position. Designed to work alongside the Stratux GPS plugin so you can re-centre on your aircraft with one click after panning around.
 
-### Stratux
+### Stratux GPS
 
 > Connects to a [Stratux](http://stratux.me/) ADS-B receiver over the local network, polls its GPS situation feed for ownship position, and uses it as the current location in Virtual Radar Server. Lets VRS automatically track your own aircraft when running in-flight on a tablet or Pi.
 
@@ -144,7 +144,7 @@ Most plugins have no extra package requirements on Mono — they just need a wor
 
   Tile serving at native zoom levels works fine without it — install only if you want to zoom in past a chart's intended scale.
 
-- **Stratux** — needs network access from the Pi running VRS to the Stratux device's HTTP situation feed (default `http://192.168.10.1/getSituation`).
+- **Stratux GPS** — needs network access from the Pi running VRS to the Stratux device's HTTP situation feed (default `http://192.168.10.1/getSituation`).
 
 ## Building from source
 
@@ -162,7 +162,7 @@ build-LogoMarkers.bat
 build-PilotsView.bat
 build-RegistrationData.bat
 build-SnapToOwnship.bat
-build-Stratux.bat
+build-StratuxGPS.bat
 build-TileServerMBTiles.bat
 ```
 

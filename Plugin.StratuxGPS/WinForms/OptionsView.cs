@@ -2,10 +2,10 @@ using System;
 using System.Windows.Forms;
 using VirtualRadar.WinForms;
 
-namespace VirtualRadar.Plugin.Stratux.WinForms
+namespace VirtualRadar.Plugin.StratuxGPS.WinForms
 {
     /// <summary>
-    /// The WinForms options dialog for the Stratux plugin.
+    /// The WinForms options dialog for the Stratux GPS plugin.
     /// </summary>
     public partial class OptionsView : BaseForm
     {

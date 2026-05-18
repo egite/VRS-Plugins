@@ -1,6 +1,6 @@
 using System;
 
-namespace VirtualRadar.Plugin.Stratux.WebAdmin
+namespace VirtualRadar.Plugin.StratuxGPS.WebAdmin
 {
     public class ViewModel
     {

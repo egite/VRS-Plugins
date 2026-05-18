@@ -1,15 +1,15 @@
 if(!VRS) var VRS = {};
 if(!VRS.WebAdmin) VRS.WebAdmin = {};
-if(!VRS.WebAdmin.StratuxPluginOptions) VRS.WebAdmin.StratuxPluginOptions = {};
+if(!VRS.WebAdmin.StratuxGPSPluginOptions) VRS.WebAdmin.StratuxGPSPluginOptions = {};
 
-VRS.WebAdmin.StratuxPluginOptions.PageHandler = function(viewId) {
+VRS.WebAdmin.StratuxGPSPluginOptions.PageHandler = function(viewId) {
     var self = this;
-    self._ViewId = new VRS.WebAdmin.ViewId('StratuxPluginOptions', viewId);
+    self._ViewId = new VRS.WebAdmin.ViewId('StratuxGPSPluginOptions', viewId);
     self._Model = null;
     self.refreshState();
 };
 
-VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.showFailureMessage = function(message) {
+VRS.WebAdmin.StratuxGPSPluginOptions.PageHandler.prototype.showFailureMessage = function(message) {
     var alert = $('#failure-message');
     if(message && message.length) {
         alert.text(message || '').show();
@@ -18,7 +18,7 @@ VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.showFailureMessage = fun
     }
 };
 
-VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.refreshState = function() {
+VRS.WebAdmin.StratuxGPSPluginOptions.PageHandler.prototype.refreshState = function() {
     var self = this;
     self.showFailureMessage(null);
     self._ViewId.ajax('GetState', {
@@ -31,7 +31,7 @@ VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.refreshState = function(
     }, false);
 };
 
-VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.save = function() {
+VRS.WebAdmin.StratuxGPSPluginOptions.PageHandler.prototype.save = function() {
     var self = this;
     self._Model.SaveAttempted(false);
     var settings = self.buildAjaxSettingsForSendConfiguration();
@@ -55,7 +55,7 @@ VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.save = function() {
     self._ViewId.ajax('Save', settings);
 };
 
-VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.buildAjaxSettingsForSendConfiguration = function() {
+VRS.WebAdmin.StratuxGPSPluginOptions.PageHandler.prototype.buildAjaxSettingsForSendConfiguration = function() {
     var self = this;
     var viewModel = ko.viewmodel.toModel(self._Model);
     return {
@@ -68,7 +68,7 @@ VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.buildAjaxSettingsForSend
     };
 };
 
-VRS.WebAdmin.StratuxPluginOptions.PageHandler.prototype.applyState = function(state) {
+VRS.WebAdmin.StratuxGPSPluginOptions.PageHandler.prototype.applyState = function(state) {
     var self = this;
     if(state.Exception) {
         self.showFailureMessage(VRS.stringUtility.format(VRS.WebAdmin.$$.WA_Exception_Reported, state.Exception));

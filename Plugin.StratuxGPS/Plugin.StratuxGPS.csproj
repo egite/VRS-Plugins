@@ -7,8 +7,8 @@
     <ProjectGuid>{A1D2E3F4-5B6C-7D8E-9F0A-1B2C3D4E5F6A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VirtualRadar.Plugin.Stratux</RootNamespace>
-    <AssemblyName>VirtualRadar.Plugin.Stratux</AssemblyName>
+    <RootNamespace>VirtualRadar.Plugin.StratuxGPS</RootNamespace>
+    <AssemblyName>VirtualRadar.Plugin.StratuxGPS</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -74,13 +74,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <Content Include="VirtualRadar.Plugin.Stratux.xml">
+    <Content Include="VirtualRadar.Plugin.StratuxGPS.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Web\WebAdmin\StratuxPluginOptions.html">
+    <Content Include="Web\WebAdmin\StratuxGPSPluginOptions.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Web\WebAdmin\StratuxPluginOptions.js">
+    <Content Include="Web\WebAdmin\StratuxGPSPluginOptions.js">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

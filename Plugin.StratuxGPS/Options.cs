@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace VirtualRadar.Plugin.Stratux
+namespace VirtualRadar.Plugin.StratuxGPS
 {
     /// <summary>
     /// The plugin's options.

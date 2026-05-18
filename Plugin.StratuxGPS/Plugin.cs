@@ -16,7 +16,7 @@ using VirtualRadar.Interface.Settings;
 using VirtualRadar.Interface.WebServer;
 using VirtualRadar.Interface.WebSite;
 
-namespace VirtualRadar.Plugin.Stratux
+namespace VirtualRadar.Plugin.StratuxGPS
 {
     /// <summary>
     /// Plugin that connects to a Stratux device to obtain GPS ownship position
@@ -49,7 +49,7 @@ namespace VirtualRadar.Plugin.Stratux
         /// <summary>
         /// See interface docs.
         /// </summary>
-        public string Id { get { return "VirtualRadarServer.Plugin.Stratux"; } }
+        public string Id { get { return "VirtualRadarServer.Plugin.StratuxGPS"; } }
 
         /// <summary>
         /// See interface docs.
@@ -157,7 +157,7 @@ namespace VirtualRadar.Plugin.Stratux
                 var webAdminViewManager = Factory.ResolveSingleton<IWebAdminViewManager>();
                 webAdminViewManager.AddWebAdminView(new WebAdminView(
                     "/WebAdmin/",
-                    "StratuxPluginOptions.html",
+                    "StratuxGPSPluginOptions.html",
                     "Stratux GPS",
                     () => new WebAdmin.OptionsView(),
                     null

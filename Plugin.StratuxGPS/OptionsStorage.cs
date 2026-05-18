@@ -5,10 +5,10 @@ using InterfaceFactory;
 using VirtualRadar.Interface;
 using VirtualRadar.Interface.Settings;
 
-namespace VirtualRadar.Plugin.Stratux
+namespace VirtualRadar.Plugin.StratuxGPS
 {
     /// <summary>
-    /// Manages the loading and saving of the Stratux plugin's options.
+    /// Manages the loading and saving of the Stratux GPS plugin's options.
     /// </summary>
     static class OptionsStorage
     {

@@ -3,7 +3,7 @@ using System.Windows.Forms;
 using VirtualRadar.Interface.View;
 using VirtualRadar.Interface.WebSite;
 
-namespace VirtualRadar.Plugin.Stratux.WebAdmin
+namespace VirtualRadar.Plugin.StratuxGPS.WebAdmin
 {
     class OptionsView : IView
     {

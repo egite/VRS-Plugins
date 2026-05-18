@@ -1,4 +1,4 @@
-namespace VirtualRadar.Plugin.Stratux.WinForms
+namespace VirtualRadar.Plugin.StratuxGPS.WinForms
 {
     partial class OptionsView
     {
