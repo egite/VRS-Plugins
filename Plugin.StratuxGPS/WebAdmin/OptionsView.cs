@@ -18,6 +18,13 @@ namespace VirtualRadar.Plugin.StratuxGPS.WebAdmin
             return new ViewModel(options, detectedAddress);
         }
 
+        [WebAdminMethod]
+        public PositionModel GetPosition()
+        {
+            var plugin = Plugin.Singleton;
+            return PositionModel.FromSnapshot(plugin?.GetCurrentPosition());
+        }
+
         [WebAdminMethod(DeferExecution = true)]
         public SaveOutcomeModel Save(ViewModel viewModel)
         {

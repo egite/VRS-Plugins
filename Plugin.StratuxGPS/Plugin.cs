@@ -308,6 +308,25 @@ namespace VirtualRadar.Plugin.StratuxGPS
         }
 
         /// <summary>
+        /// Returns a snapshot of the most recent GPS position polled from the Stratux device.
+        /// </summary>
+        public PositionSnapshot GetCurrentPosition()
+        {
+            lock(_PositionLock) {
+                return new PositionSnapshot {
+                    HasPosition      = _HasPosition,
+                    Latitude         = _Latitude,
+                    Longitude        = _Longitude,
+                    AltitudeFeet     = _AltitudeFeet,
+                    GroundSpeedKnots = _GroundSpeedKnots,
+                    TrueCourse       = _TrueCourse,
+                    FixQuality       = _FixQuality,
+                    AgeSeconds       = _HasPosition ? (DateTime.UtcNow - _LastPositionUtc).TotalSeconds : 0,
+                };
+            }
+        }
+
+        /// <summary>
         /// Intercepts web requests for our custom endpoint.
         /// </summary>
         private void WebServer_BeforeRequestReceived(object sender, RequestReceivedEventArgs args)
@@ -418,6 +437,21 @@ namespace VirtualRadar.Plugin.StratuxGPS
 
             return sb.ToString();
         }
+    }
+
+    /// <summary>
+    /// Snapshot of the most recent GPS position the plugin has polled from the Stratux device.
+    /// </summary>
+    public class PositionSnapshot
+    {
+        public bool HasPosition { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public double AltitudeFeet { get; set; }
+        public double GroundSpeedKnots { get; set; }
+        public double TrueCourse { get; set; }
+        public int FixQuality { get; set; }
+        public double AgeSeconds { get; set; }
     }
 
     /// <summary>

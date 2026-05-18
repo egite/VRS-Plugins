@@ -2,6 +2,41 @@ using System;
 
 namespace VirtualRadar.Plugin.StratuxGPS.WebAdmin
 {
+    public class PositionModel
+    {
+        public bool HasPosition { get; set; }
+        public bool PluginRunning { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public double AltitudeFeet { get; set; }
+        public double GroundSpeedKnots { get; set; }
+        public double TrueCourse { get; set; }
+        public int FixQuality { get; set; }
+        public double AgeSeconds { get; set; }
+
+        public PositionModel()
+        {
+        }
+
+        public static PositionModel FromSnapshot(PositionSnapshot snapshot)
+        {
+            if(snapshot == null) {
+                return new PositionModel { PluginRunning = false };
+            }
+            return new PositionModel {
+                PluginRunning    = true,
+                HasPosition      = snapshot.HasPosition,
+                Latitude         = snapshot.Latitude,
+                Longitude        = snapshot.Longitude,
+                AltitudeFeet     = snapshot.AltitudeFeet,
+                GroundSpeedKnots = snapshot.GroundSpeedKnots,
+                TrueCourse       = snapshot.TrueCourse,
+                FixQuality       = snapshot.FixQuality,
+                AgeSeconds       = snapshot.AgeSeconds,
+            };
+        }
+    }
+
     public class ViewModel
     {
         public long DataVersion { get; set; }
