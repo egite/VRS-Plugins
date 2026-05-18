@@ -30,12 +30,23 @@
                                         </div>
                                     </div>
                                     <div class="form-group">
+                                        <div class="col-sm-offset-3 col-sm-9 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: AutoDetectIcao" /> Auto-detect ICAO from Stratux</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
                                         <label class="col-sm-3 control-label">Ownship ICAO Address</label>
                                         <div class="col-sm-3">
+                                            <!-- ko ifnot: AutoDetectIcao -->
                                             <input type="text" class="form-control" maxlength="6" style="text-transform:uppercase;" data-bind="value: OwnshipIcao" placeholder="e.g. A12345" />
+                                            <!-- /ko -->
+                                            <!-- ko if: AutoDetectIcao -->
+                                            <input type="text" class="form-control" maxlength="6" disabled style="text-transform:uppercase;color:#888;background:#eee;" data-bind="value: DetectedIcao, attr: { placeholder: DetectedPlaceholder }" />
+                                            <!-- /ko -->
                                         </div>
                                         <div class="col-sm-6">
-                                            <p class="form-control-static text-muted">The 6-character hex ICAO address of your aircraft.</p>
+                                            <p class="form-control-static text-muted" data-bind="visible: !AutoDetectIcao()">The 6-character hex ICAO address of your aircraft.</p>
+                                            <p class="form-control-static text-muted" data-bind="visible: AutoDetectIcao()">Reading <code>OwnshipModeS</code> from the Stratux device via the Stratux GPS plugin.</p>
                                         </div>
                                     </div>
                                 </div>

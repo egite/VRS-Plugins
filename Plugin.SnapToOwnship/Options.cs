@@ -22,6 +22,13 @@ namespace VirtualRadar.Plugin.SnapToOwnship
             set { SetField(ref _OwnshipIcao, value, nameof(OwnshipIcao)); }
         }
 
+        private bool _AutoDetectIcao;
+        public bool AutoDetectIcao
+        {
+            get { return _AutoDetectIcao; }
+            set { SetField(ref _AutoDetectIcao, value, nameof(AutoDetectIcao)); }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(PropertyChangedEventArgs args)

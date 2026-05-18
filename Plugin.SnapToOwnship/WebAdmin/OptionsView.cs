@@ -17,6 +17,16 @@ namespace VirtualRadar.Plugin.SnapToOwnship.WebAdmin
             return new ViewModel(options);
         }
 
+        [WebAdminMethod]
+        public DetectedIcaoModel GetDetectedIcao()
+        {
+            var icao = StratuxBridge.TryGetOwnshipIcao();
+            return new DetectedIcaoModel {
+                HasIcao = !string.IsNullOrEmpty(icao),
+                Icao    = icao ?? "",
+            };
+        }
+
         [WebAdminMethod(DeferExecution = true)]
         public SaveOutcomeModel Save(ViewModel viewModel)
         {

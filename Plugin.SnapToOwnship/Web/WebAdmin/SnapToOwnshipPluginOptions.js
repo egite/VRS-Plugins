@@ -84,10 +84,39 @@ VRS.WebAdmin.SnapToOwnshipPluginOptions.PageHandler.prototype.applyState = funct
                         root.SaveAttempted = ko.observable(false);
                         root.SaveSuccessful = ko.observable(false);
                         root.SavedMessage = ko.observable('');
+                        root.DetectedIcao = ko.observable('');
+                        root.DetectedPlaceholder = ko.observable('Waiting for Stratux…');
                     }
                 }
             });
             ko.applyBindings(self._Model);
+            self.startDetectedIcaoPolling();
         }
     }
+};
+
+VRS.WebAdmin.SnapToOwnshipPluginOptions.PageHandler.prototype.startDetectedIcaoPolling = function() {
+    var self = this;
+    if(self._DetectTimer) return;
+
+    var poll = function() {
+        if(!self._Model || !self._Model.AutoDetectIcao()) return;
+        self._ViewId.ajax('GetDetectedIcao', {
+            success: function(data) {
+                if(data && !data.Exception && data.Response) {
+                    if(data.Response.HasIcao) {
+                        self._Model.DetectedIcao(data.Response.Icao);
+                        self._Model.DetectedPlaceholder('Waiting for Stratux…');
+                    } else {
+                        self._Model.DetectedIcao('');
+                        self._Model.DetectedPlaceholder('No ICAO from Stratux yet');
+                    }
+                }
+            },
+            error: function() { /* keep polling */ }
+        }, false);
+    };
+
+    self._DetectTimer = setInterval(poll, 2000);
+    poll();
 };

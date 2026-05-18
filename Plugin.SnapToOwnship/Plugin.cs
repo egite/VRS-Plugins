@@ -138,13 +138,31 @@ namespace VirtualRadar.Plugin.SnapToOwnship
                     }
                     _InjectorsActive = true;
                 }
-                Status = String.Format("Enabled - ICAO: {0}", string.IsNullOrEmpty(options.OwnshipIcao) ? "(not set)" : options.OwnshipIcao.ToUpperInvariant());
+                var icao = ResolveOwnshipIcao(options);
+                var source = options.AutoDetectIcao ? " (auto)" : "";
+                Status = String.Format("Enabled - ICAO: {0}{1}",
+                    string.IsNullOrEmpty(icao) ? "(not set)" : icao,
+                    source);
             }
+        }
+
+        /// <summary>
+        /// Returns the effective ownship ICAO — either the manually-configured value, or the
+        /// most recent value the Stratux GPS plugin has read from the Stratux device when
+        /// auto-detect mode is on. Returns an empty string (not null) when nothing is available.
+        /// </summary>
+        internal string ResolveOwnshipIcao(Options options)
+        {
+            if(options == null) return "";
+            if(options.AutoDetectIcao) {
+                return (StratuxBridge.TryGetOwnshipIcao() ?? "").Trim().ToUpperInvariant();
+            }
+            return (options.OwnshipIcao ?? "").Trim().ToUpperInvariant();
         }
 
         private string BuildInjectScript()
         {
-            var icao = (_Options?.OwnshipIcao ?? "").Trim().ToUpperInvariant();
+            var icao = ResolveOwnshipIcao(_Options);
 
             var sb = new StringBuilder();
             sb.AppendLine(@"<script type=""text/javascript"">");

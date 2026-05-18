@@ -6,6 +6,7 @@ namespace VirtualRadar.Plugin.SnapToOwnship.WebAdmin
     {
         public long DataVersion { get; set; }
         public bool Enabled { get; set; }
+        public bool AutoDetectIcao { get; set; }
         public string OwnshipIcao { get; set; }
 
         public ViewModel()
@@ -22,6 +23,7 @@ namespace VirtualRadar.Plugin.SnapToOwnship.WebAdmin
         {
             DataVersion = options.DataVersion;
             Enabled = options.Enabled;
+            AutoDetectIcao = options.AutoDetectIcao;
             OwnshipIcao = options.OwnshipIcao ?? "";
         }
 
@@ -29,8 +31,15 @@ namespace VirtualRadar.Plugin.SnapToOwnship.WebAdmin
         {
             options.DataVersion = DataVersion;
             options.Enabled = Enabled;
+            options.AutoDetectIcao = AutoDetectIcao;
             options.OwnshipIcao = (OwnshipIcao ?? "").Trim().ToUpperInvariant();
         }
+    }
+
+    public class DetectedIcaoModel
+    {
+        public bool HasIcao { get; set; }
+        public string Icao { get; set; }
     }
 
     public class SaveOutcomeModel

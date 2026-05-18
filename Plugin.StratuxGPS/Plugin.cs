@@ -41,6 +41,11 @@ namespace VirtualRadar.Plugin.StratuxGPS
         private bool _HasPosition;
         private DateTime _LastPositionUtc;
 
+        private readonly object _OwnshipLock = new object();
+        private string _OwnshipIcao;
+        private DateTime _OwnshipFetchedUtc;
+        private int _PollCountSinceOwnshipFetch;
+
         /// <summary>
         /// Gets the last initialised instance of the plugin object.
         /// </summary>
@@ -305,6 +310,56 @@ namespace VirtualRadar.Plugin.StratuxGPS
                 Status = "Enabled";
                 StatusDescription = $"Error: {ex.Message}";
             }
+
+            // Refresh OwnshipModeS roughly once a minute. The Stratux setting changes rarely,
+            // but checking periodically picks up edits the pilot makes in the Stratux UI.
+            var pollsPerMinute = Math.Max(1, 60000 / Math.Max(250, _Options.PollIntervalMilliseconds));
+            if(_OwnshipIcao == null || ++_PollCountSinceOwnshipFetch >= pollsPerMinute) {
+                _PollCountSinceOwnshipFetch = 0;
+                FetchOwnshipIcao();
+            }
+        }
+
+        /// <summary>
+        /// Fetches the configured OwnshipModeS hex code from the Stratux device's /getSettings endpoint
+        /// and caches it. Stratux exposes it as a 6-character hex string (e.g. "F00000").
+        /// Reference: cyoung/stratux notes/app-vendor-integration.md
+        /// </summary>
+        private void FetchOwnshipIcao()
+        {
+            try {
+                var url = $"http://{_Options.StratuxAddress}:{_Options.StratuxPort}/getSettings";
+                var request = WebRequest.CreateHttp(url);
+                request.Method = "GET";
+                request.Timeout = Math.Max(500, _Options.PollIntervalMilliseconds - 100);
+
+                using(var response = (HttpWebResponse)request.GetResponse())
+                using(var stream = response.GetResponseStream())
+                using(var reader = new StreamReader(stream, Encoding.UTF8)) {
+                    var json = reader.ReadToEnd();
+                    var settings = JsonConvert.DeserializeObject<StratuxSettings>(json);
+                    var icao = settings?.OwnshipModeS?.Trim();
+                    if(!string.IsNullOrEmpty(icao) && icao != "000000") {
+                        lock(_OwnshipLock) {
+                            _OwnshipIcao = icao.ToUpperInvariant();
+                            _OwnshipFetchedUtc = DateTime.UtcNow;
+                        }
+                    }
+                }
+            } catch {
+                // Transient failure — keep the previously cached value (if any).
+            }
+        }
+
+        /// <summary>
+        /// Returns the ownship Mode-S / ICAO hex code last read from the Stratux device, or null
+        /// if it has not yet been successfully fetched.
+        /// </summary>
+        public string GetOwnshipIcao()
+        {
+            lock(_OwnshipLock) {
+                return _OwnshipIcao;
+            }
         }
 
         /// <summary>
@@ -335,7 +390,28 @@ namespace VirtualRadar.Plugin.StratuxGPS
 
             if(string.Equals(args.PathAndFile, "/Stratux/Location.json", StringComparison.OrdinalIgnoreCase)) {
                 HandleLocationRequest(args);
+            } else if(string.Equals(args.PathAndFile, "/Stratux/Ownship.json", StringComparison.OrdinalIgnoreCase)) {
+                HandleOwnshipRequest(args);
             }
+        }
+
+        /// <summary>
+        /// Returns the auto-detected ownship Mode-S / ICAO hex code as JSON for other plugins
+        /// or scripts that want to consume it.
+        /// </summary>
+        private void HandleOwnshipRequest(RequestReceivedEventArgs args)
+        {
+            string icao;
+            lock(_OwnshipLock) {
+                icao = _OwnshipIcao;
+            }
+            var json = string.IsNullOrEmpty(icao)
+                ? "{\"has\":false}"
+                : JsonConvert.SerializeObject(new { has = true, icao = icao });
+
+            var responder = Factory.Resolve<IResponder>();
+            responder.SendText(args.Request, args.Response, json, Encoding.UTF8, MimeType.Json);
+            args.Handled = true;
         }
 
         /// <summary>
@@ -452,6 +528,15 @@ namespace VirtualRadar.Plugin.StratuxGPS
         public double TrueCourse { get; set; }
         public int FixQuality { get; set; }
         public double AgeSeconds { get; set; }
+    }
+
+    /// <summary>
+    /// Subset of the Stratux /getSettings JSON response — we only care about OwnshipModeS,
+    /// the user-configured ICAO hex of their transponder.
+    /// </summary>
+    internal class StratuxSettings
+    {
+        public string OwnshipModeS { get; set; }
     }
 
     /// <summary>
