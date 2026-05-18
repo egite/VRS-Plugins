@@ -16,7 +16,7 @@ namespace VirtualRadar.Plugin.LogoMarkers
         /// </summary>
         public long DataVersion { get; set; }
 
-        private bool _Enabled;
+        private bool _Enabled = true;
         /// <summary>
         /// Gets or sets a value indicating whether the plugin is active.
         /// </summary>

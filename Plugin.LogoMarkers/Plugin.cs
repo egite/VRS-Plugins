@@ -418,8 +418,10 @@ namespace VirtualRadar.Plugin.LogoMarkers
             sb.AppendLine(String.Format("  var _serverSide = {0};", _Options.ServerSideCompositing ? "true" : "false"));
             sb.AppendLine();
 
-            // State: _mode 0=off, 1=logos replace icons, 2=logos above icons
-            sb.AppendLine("  var _mode = 0;");
+            // State: _mode 0=normal icons, 1=logos replace icons, 2=logos above icons.
+            // Default to 2 (Logos+Icon) so fresh users get the richest view; localStorage
+            // overrides this for anyone who has previously cycled the toggle.
+            sb.AppendLine("  var _mode = 2;");
             sb.AppendLine("  var _generation = 0;");
             sb.AppendLine("  var _availableLogos = null;");
             sb.AppendLine("  var _toggleBtn = null;");
@@ -436,8 +438,8 @@ namespace VirtualRadar.Plugin.LogoMarkers
             sb.AppendLine();
 
             // Load saved state
-            sb.AppendLine("  try { var s = localStorage.getItem('vrsLogoMarkers'); if(s !== null) _mode = parseInt(s,10)||0; } catch(e) {}");
-            sb.AppendLine("  if(_mode < 0 || _mode > 2) _mode = 0;");
+            sb.AppendLine("  try { var s = localStorage.getItem('vrsLogoMarkers'); if(s !== null) { var n = parseInt(s,10); _mode = isNaN(n) ? 2 : n; } } catch(e) {}");
+            sb.AppendLine("  if(_mode < 0 || _mode > 2) _mode = 2;");
             sb.AppendLine("  if(_mode > 0) _generation = 1;");
             sb.AppendLine("  try { if(localStorage.getItem('vrsLogosVisible') === '0') _logosVisible = false; } catch(e) {}");
             sb.AppendLine();
