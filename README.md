@@ -16,6 +16,10 @@ A collection of plugins for [Virtual Radar Server](http://www.virtualradarserver
 
 > Replaces the default aircraft SVG icons on the map with composite markers that combine the operator's logo and a heading arrow, rendered server-side. Useful when you'd rather identify aircraft by airline branding than by silhouette.
 
+### MissingLogos
+
+> Watches the live aircraft feed and logs any operator ICAO code (and aircraft model) for which VRS has no flag / silhouette image, appending one line per code to `MissingLogos.log` inside the plugin folder. Pairs with the [`fetch_missing_logos.py`](#fetch_missing_logospy) helper script below, which reads that log and fills the gaps from a community flag pack.
+
 ### PilotsView
 
 > Provides a Google Earth "pilot's view" KML feed that follows a selected aircraft from a chase-camera perspective. Uses a background-sampled position queue (one snapshot per second per tracked aircraft) so the camera always animates between two real samples, avoiding the prediction stalls that break Google Earth's `onStop` callback.
@@ -65,6 +69,23 @@ A collection of plugins for [Virtual Radar Server](http://www.virtualradarserver
 ### TileServerMBTiles
 
 > Serves map tiles to the VRS web UI from local [`.mbtiles`](https://github.com/mapbox/mbtiles-spec) files, so the map works offline or with self-hosted tile sources (FAA sectional / IFR low / IFR high charts, custom basemaps, etc.). Drop one or more `.mbtiles` files into a folder, point the plugin at it, and each file appears as a selectable base map with an opacity slider.
+
+## Helper scripts
+
+### fetch_missing_logos.py
+
+> Companion script for the **MissingLogos** plugin. Reads the plugin's `MissingLogos.log`, finds which operator ICAO codes still don't have a `.bmp` in the VRS flags folder, and fills them in by:
+>
+> 1. Extracting matching files from the [rikgale/VRSOperatorFlags](https://github.com/rikgale/VRSOperatorFlags) community pack on GitHub (the zip is cached locally and re-downloaded every 30 days).
+> 2. For any code not in the pack, generating an 85×20 text-based placeholder BMP showing the ICAO code (requires [Pillow](https://pypi.org/project/Pillow/); install with `pip install Pillow`).
+>
+> Edit the `MISSING_LOG` and `FLAGS_FOLDER` paths at the top of the script for your install, then run any time to pick up newly logged codes:
+>
+> ```sh
+> python fetch_missing_logos.py [--force-update]
+> ```
+>
+> `--force-update` re-downloads the community zip even if the cached copy is still fresh.
 
 ## Installation
 
