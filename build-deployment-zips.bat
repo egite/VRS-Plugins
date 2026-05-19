@@ -1,6 +1,6 @@
 @echo off
 rem Builds VRS plugin deployment ZIPs for cross-platform installs.
-rem Produces <Name>.zip in forgit\.
+rem Produces <Name>.zip at the repo root (the tracked deployment artifacts).
 rem
 rem Plugins are AnyCPU .NET Framework 4.8, so the same DLL runs in either
 rem 32-bit or 64-bit VirtualRadar.exe - no separate arch builds needed.
@@ -27,11 +27,10 @@ if not exist "%TAR%" (
     exit /b 1
 )
 
-set "OUT=%ROOT%\forgit"
-set "STAGE=%OUT%\_zipstaging"
+set "OUT=%ROOT%"
+set "STAGE=%ROOT%\_zipstaging"
 
 if exist "%STAGE%" rmdir /s /q "%STAGE%"
-if not exist "%OUT%" mkdir "%OUT%"
 mkdir "%STAGE%"
 
 rem name                     prefer-config
