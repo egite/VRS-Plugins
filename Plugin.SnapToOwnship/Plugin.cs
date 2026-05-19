@@ -101,7 +101,11 @@ namespace VirtualRadar.Plugin.SnapToOwnship
                     args.Response.MimeType = "application/json";
                     args.Response.AddHeader("Cache-Control", "no-cache, no-store, must-revalidate");
                     args.Response.ContentLength = bytes.Length;
-                    using(var s = args.Response.OutputStream) { s.Write(bytes, 0, bytes.Length); }
+                    // Do NOT dispose OutputStream: under VRS's OWIN host, the body is a MemoryStream
+                    // owned by AWhewell.Owin.CompressResponseManipulator, which rewinds it (Position=0)
+                    // after the handler returns to gzip-encode the buffer. Disposing here throws
+                    // ObjectDisposedException from the compression middleware on every request.
+                    args.Response.OutputStream.Write(bytes, 0, bytes.Length);
                     args.Handled = true;
                 }
             } catch(Exception ex) {

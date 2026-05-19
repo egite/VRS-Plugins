@@ -312,10 +312,11 @@ namespace VirtualRadar.Plugin.PilotsView
             args.Response.StatusCode = HttpStatusCode.OK;
             args.Response.MimeType = "application/vnd.google-earth.kml+xml";
             args.Response.ContentLength = Encoding.UTF8.GetByteCount(kml);
-            using(var stream = args.Response.OutputStream) {
-                var bytes = Encoding.UTF8.GetBytes(kml);
-                stream.Write(bytes, 0, bytes.Length);
-            }
+            // Don't dispose OutputStream — VRS's OWIN compression middleware rewinds the buffered
+            // MemoryStream after the handler returns; disposing here throws ObjectDisposedException
+            // from CompressResponseManipulator.
+            var kmlBytes = Encoding.UTF8.GetBytes(kml);
+            args.Response.OutputStream.Write(kmlBytes, 0, kmlBytes.Length);
             args.Handled = true;
         }
 
@@ -578,10 +579,9 @@ namespace VirtualRadar.Plugin.PilotsView
             args.Response.StatusCode = HttpStatusCode.OK;
             args.Response.MimeType = "application/vnd.google-earth.kml+xml";
             args.Response.ContentLength = Encoding.UTF8.GetByteCount(kml);
-            using(var stream = args.Response.OutputStream) {
-                var bytes = Encoding.UTF8.GetBytes(kml);
-                stream.Write(bytes, 0, bytes.Length);
-            }
+            // See note above: do not dispose OutputStream — OWIN compression middleware needs it.
+            var kmlBytes = Encoding.UTF8.GetBytes(kml);
+            args.Response.OutputStream.Write(kmlBytes, 0, kmlBytes.Length);
             args.Handled = true;
         }
 
@@ -651,9 +651,8 @@ namespace VirtualRadar.Plugin.PilotsView
             args.Response.MimeType = "application/json";
             args.Response.AddHeader("Cache-Control", "no-cache, no-store, must-revalidate");
             args.Response.ContentLength = bytes.Length;
-            using(var s = args.Response.OutputStream) {
-                s.Write(bytes, 0, bytes.Length);
-            }
+            // See note above: do not dispose OutputStream — OWIN compression middleware needs it.
+            args.Response.OutputStream.Write(bytes, 0, bytes.Length);
             args.Handled = true;
         }
 
@@ -678,9 +677,8 @@ namespace VirtualRadar.Plugin.PilotsView
             args.Response.StatusCode = HttpStatusCode.OK;
             args.Response.MimeType = "text/html";
             args.Response.ContentLength = bytes.Length;
-            using(var s = args.Response.OutputStream) {
-                s.Write(bytes, 0, bytes.Length);
-            }
+            // See note above: do not dispose OutputStream — OWIN compression middleware needs it.
+            args.Response.OutputStream.Write(bytes, 0, bytes.Length);
             args.Handled = true;
         }
 
@@ -920,9 +918,8 @@ namespace VirtualRadar.Plugin.PilotsView
             args.Response.MimeType = "image/png";
             args.Response.AddHeader("Cache-Control", "no-cache, no-store, must-revalidate");
             args.Response.ContentLength = png.Length;
-            using(var s = args.Response.OutputStream) {
-                s.Write(png, 0, png.Length);
-            }
+            // See note above: do not dispose OutputStream — OWIN compression middleware needs it.
+            args.Response.OutputStream.Write(png, 0, png.Length);
             args.Handled = true;
         }
 
@@ -1033,10 +1030,9 @@ namespace VirtualRadar.Plugin.PilotsView
             args.Response.StatusCode = HttpStatusCode.OK;
             args.Response.MimeType = "text/html";
             args.Response.ContentLength = Encoding.UTF8.GetByteCount(html);
-            using(var stream = args.Response.OutputStream) {
-                var bytes = Encoding.UTF8.GetBytes(html);
-                stream.Write(bytes, 0, bytes.Length);
-            }
+            // See note above: do not dispose OutputStream — OWIN compression middleware needs it.
+            var htmlBytes = Encoding.UTF8.GetBytes(html);
+            args.Response.OutputStream.Write(htmlBytes, 0, htmlBytes.Length);
             args.Handled = true;
         }
 
