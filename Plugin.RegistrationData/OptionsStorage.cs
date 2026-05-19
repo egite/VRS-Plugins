@@ -18,7 +18,8 @@ namespace VirtualRadar.Plugin.RegistrationData
             var pluginSettings = pluginStorage.Load();
             var serialisedOptions = pluginSettings.ReadString(plugin, Key);
 
-            Options result = serialisedOptions == null ? new Options() : null;
+            var isFreshInstall = serialisedOptions == null;
+            Options result = isFreshInstall ? new Options() : null;
             if(result == null) {
                 try {
                     using(var stream = new MemoryStream(Encoding.UTF8.GetBytes(serialisedOptions))) {
@@ -37,7 +38,25 @@ namespace VirtualRadar.Plugin.RegistrationData
                 result.DatabaseFolder = appData;
             }
 
+            // On a Stratux host the root filesystem is typically on a tmpfs overlay
+            // when persistent logging is off, so anything we download is wiped on
+            // reboot. Default automatic downloads to OFF for fresh installs there;
+            // the user can flip it on if they've pointed DatabaseFolder at persistent
+            // storage (e.g. a USB drive). Existing installs keep their saved choice.
+            if(isFreshInstall && IsStratux()) {
+                result.EnableAutomaticDownloads = false;
+            }
+
             return result;
+        }
+
+        internal static bool IsStratux()
+        {
+            try {
+                return Directory.Exists("/opt/stratux");
+            } catch {
+                return false;
+            }
         }
 
         public static void Save(Plugin plugin, Options options)

@@ -34,6 +34,11 @@
                                         <label class="col-sm-3 control-label">Database Folder</label>
                                         <div class="col-sm-9">
                                             <input type="text" class="form-control" data-bind="value: DatabaseFolder" />
+                                            <!-- ko if: IsStratux -->
+                                            <p class="help-block" style="margin-top:4px;">
+                                                <strong>Stratux detected:</strong> The root filesystem is on a tmpfs overlay when persistent logging is off, so downloads written here will be lost on reboot unless the Stratux is in persistent logging mode (when in developer mode: Settings &rarr; Diagnostics). Do not update the databases unless you're in persistent logging mode. It is suggested to update the databases infrequently.
+                                            </p>
+                                            <!-- /ko -->
                                         </div>
                                     </div>
                                 </div>
@@ -154,6 +159,12 @@
                             <div class="panel panel-default">
                                 <div class="panel-heading"><strong>Database Downloads</strong></div>
                                 <div class="panel-body">
+                                    <div class="form-group">
+                                        <div class="col-sm-offset-3 col-sm-9 checkbox">
+                                            <label><input type="checkbox" data-bind="checked: EnableAutomaticDownloads" /> Automatically download/refresh databases on the configured intervals</label>
+                                            <p class="help-block" style="margin-top:2px;">Turn off if this host doesn't persist files across reboots (e.g. running on a Stratux with persistent logging disabled). You can still trigger downloads manually with the buttons below.</p>
+                                        </div>
+                                    </div>
                                     <div class="form-group">
                                         <label class="col-sm-3 control-label">Status</label>
                                         <div class="col-sm-9">

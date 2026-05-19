@@ -127,6 +127,7 @@ namespace VirtualRadar.Plugin.RegistrationData
         {
             var options = state as Options;
             if(options == null) return;
+            if(!options.EnableAutomaticDownloads) return;
 
             try {
                 var now = DateTime.UtcNow;

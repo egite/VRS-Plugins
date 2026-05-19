@@ -31,7 +31,18 @@ namespace VirtualRadar.Plugin.RegistrationData.WinForms
 
             if(!DesignMode && Options != null) {
                 checkBoxEnabled.Checked = Options.Enabled;
+                checkBoxAutoDownloads.Checked = Options.EnableAutomaticDownloads;
                 textBoxDatabaseFolder.Text = Options.DatabaseFolder ?? "";
+
+                // On Stratux, show the USB-drive hint and push the groups below
+                // it down to make room.
+                if(OptionsStorage.IsStratux()) {
+                    labelStratuxHint.Visible = true;
+                    const int shift = 66;
+                    foreach(Control c in tabSettings.Controls) {
+                        if(c != labelStratuxHint && c.Top >= 62) c.Top += shift;
+                    }
+                }
                 radioNewTab.Checked = Options.OpenInNewTab;
                 radioPopup.Checked = !Options.OpenInNewTab;
                 checkBoxFetchPhotos.Checked = Options.FetchAircraftPhotos;
@@ -264,6 +275,7 @@ namespace VirtualRadar.Plugin.RegistrationData.WinForms
         private void buttonOK_Click(object sender, EventArgs e)
         {
             Options.Enabled = checkBoxEnabled.Checked;
+            Options.EnableAutomaticDownloads = checkBoxAutoDownloads.Checked;
             Options.DatabaseFolder = textBoxDatabaseFolder.Text.Trim();
             Options.OpenInNewTab = radioNewTab.Checked;
             Options.FetchAircraftPhotos = checkBoxFetchPhotos.Checked;

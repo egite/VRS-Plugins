@@ -15,6 +15,13 @@ namespace VirtualRadar.Plugin.RegistrationData
             set { SetField(ref _Enabled, value, nameof(Enabled)); }
         }
 
+        private bool _EnableAutomaticDownloads = true;
+        public bool EnableAutomaticDownloads
+        {
+            get { return _EnableAutomaticDownloads; }
+            set { SetField(ref _EnableAutomaticDownloads, value, nameof(EnableAutomaticDownloads)); }
+        }
+
         private string _DatabaseFolder;
         public string DatabaseFolder
         {

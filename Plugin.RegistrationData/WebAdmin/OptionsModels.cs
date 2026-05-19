@@ -6,6 +6,8 @@ namespace VirtualRadar.Plugin.RegistrationData.WebAdmin
     {
         public long DataVersion { get; set; }
         public bool Enabled { get; set; }
+        public bool EnableAutomaticDownloads { get; set; }
+        public bool IsStratux { get; set; }
         public string DatabaseFolder { get; set; }
         public bool OpenInNewTab { get; set; }
         public bool FetchAircraftPhotos { get; set; }
@@ -65,6 +67,8 @@ namespace VirtualRadar.Plugin.RegistrationData.WebAdmin
         {
             DataVersion = options.DataVersion;
             Enabled = options.Enabled;
+            EnableAutomaticDownloads = options.EnableAutomaticDownloads;
+            IsStratux = OptionsStorage.IsStratux();
             DatabaseFolder = options.DatabaseFolder ?? "";
             OpenInNewTab = options.OpenInNewTab;
             FetchAircraftPhotos = options.FetchAircraftPhotos;
@@ -110,6 +114,7 @@ namespace VirtualRadar.Plugin.RegistrationData.WebAdmin
         {
             options.DataVersion = DataVersion;
             options.Enabled = Enabled;
+            options.EnableAutomaticDownloads = EnableAutomaticDownloads;
             options.DatabaseFolder = DatabaseFolder;
             options.OpenInNewTab = OpenInNewTab;
             options.FetchAircraftPhotos = FetchAircraftPhotos;

@@ -22,6 +22,8 @@ namespace VirtualRadar.Plugin.RegistrationData.WinForms
 
             // Settings tab controls
             this.checkBoxEnabled = new System.Windows.Forms.CheckBox();
+            this.checkBoxAutoDownloads = new System.Windows.Forms.CheckBox();
+            this.labelStratuxHint = new System.Windows.Forms.Label();
             this.labelFolderLabel = new System.Windows.Forms.Label();
             this.textBoxDatabaseFolder = new System.Windows.Forms.TextBox();
             this.buttonBrowseFolder = new System.Windows.Forms.Button();
@@ -133,6 +135,12 @@ namespace VirtualRadar.Plugin.RegistrationData.WinForms
             this.checkBoxEnabled.Text = "Enabled";
             this.tabSettings.Controls.Add(this.checkBoxEnabled);
 
+            // Automatic downloads
+            this.checkBoxAutoDownloads.AutoSize = true;
+            this.checkBoxAutoDownloads.Location = new System.Drawing.Point(100, 12);
+            this.checkBoxAutoDownloads.Text = "Automatically download/refresh databases";
+            this.tabSettings.Controls.Add(this.checkBoxAutoDownloads);
+
             // Database Folder
             this.labelFolderLabel.AutoSize = true;
             this.labelFolderLabel.Location = new System.Drawing.Point(12, 38);
@@ -146,6 +154,19 @@ namespace VirtualRadar.Plugin.RegistrationData.WinForms
             this.tabSettings.Controls.Add(this.labelFolderLabel);
             this.tabSettings.Controls.Add(this.textBoxDatabaseFolder);
             this.tabSettings.Controls.Add(this.buttonBrowseFolder);
+
+            // Stratux-only hint under Database Folder
+            this.labelStratuxHint.AutoSize = false;
+            this.labelStratuxHint.Location = new System.Drawing.Point(110, 56);
+            this.labelStratuxHint.Size = new System.Drawing.Size(441, 60);
+            this.labelStratuxHint.ForeColor = System.Drawing.Color.FromArgb(180, 100, 0);
+            this.labelStratuxHint.Text = "Stratux detected: The root filesystem is on a tmpfs overlay when persistent " +
+                "logging is off, so downloads written here will be lost on reboot unless the Stratux is in " +
+                "persistent logging mode (when in developer mode: Settings → Diagnostics). Do not update " +
+                "the databases unless you're in persistent logging mode. It is suggested to update the " +
+                "databases infrequently.";
+            this.labelStratuxHint.Visible = false;
+            this.tabSettings.Controls.Add(this.labelStratuxHint);
 
             // Display group
             this.groupBoxDisplay.Location = new System.Drawing.Point(12, 62);
@@ -388,6 +409,8 @@ namespace VirtualRadar.Plugin.RegistrationData.WinForms
         private System.Windows.Forms.TabPage tabSettings;
         private System.Windows.Forms.TabPage tabDownloads;
         private System.Windows.Forms.CheckBox checkBoxEnabled;
+        private System.Windows.Forms.CheckBox checkBoxAutoDownloads;
+        private System.Windows.Forms.Label labelStratuxHint;
         private System.Windows.Forms.Label labelFolderLabel;
         private System.Windows.Forms.TextBox textBoxDatabaseFolder;
         private System.Windows.Forms.Button buttonBrowseFolder;
