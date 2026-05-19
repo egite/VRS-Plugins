@@ -1,0 +1,36 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+
+# NuGet
+packages/
+*.nupkg
+
+# Per-plugin packaged artifacts (intermediate)
+dist/
+*.tar.gz
+_zipstaging/
+
+# Note: <Name>.zip deployment artifacts at repo root are intentionally tracked.
+
+# IDE / VS
+.vs/
+*.suo
+*.user
+*.userprefs
+*.cache
+
+# Claude / Cowork agent state
+.claude/
+.claude-memory/
+
+# Project archives (Archive Project.bat etc.)
+*.7z
+
+# Per-plugin zip artifacts inside the plugin folder (only root-level zips are tracked)
+Plugin.*/Plugin.*.zip
+
+# OS noise
+Thumbs.db
+.DS_Store
+desktop.ini
