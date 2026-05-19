@@ -50,5 +50,14 @@ namespace VirtualRadar.Plugin.LogoMarkers.WinForms
             DialogResult = DialogResult.OK;
             Close();
         }
+
+        private void linkLabelLogoSource_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            try {
+                System.Diagnostics.Process.Start(linkLabelLogoSource.Text);
+            } catch {
+                // Browser launch can fail on headless / Mono setups — ignore silently rather than crash the dialog.
+            }
+        }
     }
 }

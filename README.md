@@ -15,6 +15,8 @@ A collection of plugins for [Virtual Radar Server](http://www.virtualradarserver
 ### LogoMarkers
 
 > Replaces the default aircraft SVG icons on the map with composite markers that combine the operator's logo and a heading arrow, rendered server-side. Useful when you'd rather identify aircraft by airline branding than by silhouette.
+>
+> **Where to get the logos:** the plugin reads operator-flag BMPs from VRS's standard operator-flags folder (configured in **Tools → Options → Data Sources → Operator flags folder**, default `~/.local/share/VirtualRadar/Flags` on Mono or `%LocalAppData%\VirtualRadar\Flags` on Windows). The community pack at [rikgale/VRSOperatorFlags](https://github.com/rikgale/VRSOperatorFlags) is the usual source — extract its `OperatorFlags.zip` into that folder. The [fetch_missing_logos.py](#fetch_missing_logospy) helper below can pull only the codes that VRS has actually seen on your feed (via the MissingLogos plugin's log), so you don't need to ship the whole pack.
 
 ### MissingLogos
 

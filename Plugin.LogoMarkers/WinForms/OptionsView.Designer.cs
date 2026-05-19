@@ -29,6 +29,8 @@ namespace VirtualRadar.Plugin.LogoMarkers.WinForms
         {
             this.checkBoxEnabled = new System.Windows.Forms.CheckBox();
             this.checkBoxServerSide = new System.Windows.Forms.CheckBox();
+            this.labelLogosInfo = new System.Windows.Forms.Label();
+            this.linkLabelLogoSource = new System.Windows.Forms.LinkLabel();
             this.buttonOK = new System.Windows.Forms.Button();
             this.buttonCancel = new System.Windows.Forms.Button();
             this.SuspendLayout();
@@ -53,13 +55,35 @@ namespace VirtualRadar.Plugin.LogoMarkers.WinForms
             this.checkBoxServerSide.Text = "Server-side image compositing (requires libgdiplus on Linux)";
             this.checkBoxServerSide.UseVisualStyleBackColor = true;
             //
+            // labelLogosInfo
+            //
+            this.labelLogosInfo.Location = new System.Drawing.Point(12, 65);
+            this.labelLogosInfo.Name = "labelLogosInfo";
+            this.labelLogosInfo.Size = new System.Drawing.Size(360, 75);
+            this.labelLogosInfo.TabIndex = 2;
+            this.labelLogosInfo.Text = "Logos are read from VRS\'s Operator flags folder (Tools → Options → Data Sources). " +
+                "The community pack is the usual source — extract its OperatorFlags.zip into that " +
+                "folder. The fetch_missing_logos.py script in the VRS-Plugins repo can pull just the " +
+                "codes your feed actually sees, using the MissingLogos plugin\'s log.";
+            //
+            // linkLabelLogoSource
+            //
+            this.linkLabelLogoSource.AutoSize = true;
+            this.linkLabelLogoSource.Location = new System.Drawing.Point(12, 145);
+            this.linkLabelLogoSource.Name = "linkLabelLogoSource";
+            this.linkLabelLogoSource.Size = new System.Drawing.Size(225, 13);
+            this.linkLabelLogoSource.TabIndex = 3;
+            this.linkLabelLogoSource.TabStop = true;
+            this.linkLabelLogoSource.Text = "https://github.com/rikgale/VRSOperatorFlags";
+            this.linkLabelLogoSource.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLabelLogoSource_LinkClicked);
+            //
             // buttonOK
             //
             this.buttonOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonOK.Location = new System.Drawing.Point(216, 70);
+            this.buttonOK.Location = new System.Drawing.Point(216, 175);
             this.buttonOK.Name = "buttonOK";
             this.buttonOK.Size = new System.Drawing.Size(75, 23);
-            this.buttonOK.TabIndex = 2;
+            this.buttonOK.TabIndex = 4;
             this.buttonOK.Text = "OK";
             this.buttonOK.UseVisualStyleBackColor = true;
             this.buttonOK.Click += new System.EventHandler(this.buttonOK_Click);
@@ -68,10 +92,10 @@ namespace VirtualRadar.Plugin.LogoMarkers.WinForms
             //
             this.buttonCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.buttonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.buttonCancel.Location = new System.Drawing.Point(297, 70);
+            this.buttonCancel.Location = new System.Drawing.Point(297, 175);
             this.buttonCancel.Name = "buttonCancel";
             this.buttonCancel.Size = new System.Drawing.Size(75, 23);
-            this.buttonCancel.TabIndex = 3;
+            this.buttonCancel.TabIndex = 5;
             this.buttonCancel.Text = "Cancel";
             this.buttonCancel.UseVisualStyleBackColor = true;
             //
@@ -81,9 +105,11 @@ namespace VirtualRadar.Plugin.LogoMarkers.WinForms
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.buttonCancel;
-            this.ClientSize = new System.Drawing.Size(384, 105);
+            this.ClientSize = new System.Drawing.Size(384, 210);
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.buttonOK);
+            this.Controls.Add(this.linkLabelLogoSource);
+            this.Controls.Add(this.labelLogosInfo);
             this.Controls.Add(this.checkBoxServerSide);
             this.Controls.Add(this.checkBoxEnabled);
             this.MaximizeBox = false;
@@ -101,6 +127,8 @@ namespace VirtualRadar.Plugin.LogoMarkers.WinForms
 
         private System.Windows.Forms.CheckBox checkBoxEnabled;
         private System.Windows.Forms.CheckBox checkBoxServerSide;
+        private System.Windows.Forms.Label labelLogosInfo;
+        private System.Windows.Forms.LinkLabel linkLabelLogoSource;
         private System.Windows.Forms.Button buttonOK;
         private System.Windows.Forms.Button buttonCancel;
     }
