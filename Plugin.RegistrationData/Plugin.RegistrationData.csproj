@@ -71,13 +71,13 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="VirtualRadar.Interface">
-      <HintPath>..\Plugin.CustomLinks\bin\Debug\VirtualRadar.Interface.dll</HintPath>
+      <HintPath>..\References\VirtualRadar.Interface.dll</HintPath>
     </Reference>
     <Reference Include="VirtualRadar.Localisation">
-      <HintPath>..\Plugin.CustomLinks\bin\Debug\VirtualRadar.Localisation.dll</HintPath>
+      <HintPath>..\References\VirtualRadar.Localisation.dll</HintPath>
     </Reference>
     <Reference Include="VirtualRadar.WinForms">
-      <HintPath>..\Plugin.CustomLinks\bin\Debug\VirtualRadar.WinForms.dll</HintPath>
+      <HintPath>..\References\VirtualRadar.WinForms.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

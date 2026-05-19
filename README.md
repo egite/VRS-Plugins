@@ -174,7 +174,9 @@ Most plugins have no extra package requirements on Mono — they just need a wor
 Each plugin builds as a single .NET Framework 4.8 DLL. Requirements:
 
 - Visual Studio 2015 or later, **or** Build Tools for Visual Studio (any edition with the .NET desktop workload).
-- A local copy of Virtual Radar Server 3.x for the referenced `VirtualRadar.Interface.dll` / `VirtualRadar.Localisation.dll` / `VirtualRadar.WinForms.dll`. The csproj files reference them via `..\Plugin.CustomLinks\bin\Debug\` — drop those three DLLs from your VRS install into `Plugin.CustomLinks\bin\Debug\` before the first build, or edit the `<HintPath>` entries.
+- The three VRS interface DLLs (`VirtualRadar.Interface.dll`, `VirtualRadar.Localisation.dll`, `VirtualRadar.WinForms.dll`) are checked in under `References/` and the csproj files point at that folder, so no manual seeding step is needed for those.
+- NuGet packages (`AWhewell.InterfaceFactory`, `Newtonsoft.Json`) are restored automatically — `_build-plugin.bat` calls `nuget.exe restore` before MSBuild. (`nuget.exe` is bundled at the repo root.)
+- LiveATC still references `Dapper.dll` via an absolute `C:\Program Files\VirtualRadar\Dapper.dll` HintPath; install VRS to that location (or edit `Plugin.LiveATC.csproj`) if you build LiveATC.
 
 Per-plugin build scripts are in the repo root:
 

@@ -60,6 +60,26 @@ if not defined MSBUILD (
 )
 
 echo MSBuild: %MSBUILD%
+
+rem Restore NuGet packages (AWhewell.InterfaceFactory, Newtonsoft.Json, ...).
+rem packages/ is gitignored, so a fresh clone has nothing to satisfy the
+rem ..\packages\... HintPaths until this runs at least once.
+set "NUGET=%ROOT%\nuget.exe"
+if not exist "%NUGET%" (
+    echo WARNING: nuget.exe not found at %NUGET%; skipping restore.
+    echo If build fails on missing packages, ensure packages/ is populated.
+    goto :skip_restore
+)
+echo Restoring NuGet packages...
+"%NUGET%" restore "%PROJ%" -PackagesDirectory "%ROOT%\packages" -Verbosity quiet
+set "RC=%ERRORLEVEL%"
+if not "%RC%"=="0" (
+    echo.
+    echo NUGET RESTORE FAILED ^(exit %RC%^) for Plugin.%NAME%
+    exit /b %RC%
+)
+:skip_restore
+
 echo Building Plugin.%NAME% [%CFG%]...
 "%MSBUILD%" "%PROJ%" /t:Rebuild /p:Configuration=%CFG% /p:Platform=AnyCPU /v:minimal /nologo
 set "RC=%ERRORLEVEL%"
