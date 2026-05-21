@@ -35,6 +35,7 @@ mkdir "%STAGE%"
 
 rem name                     prefer-config
 call :build CustomLinks         Release
+call :build DeselectAircraft    Release
 call :build LiveATC             Release
 call :build LogoMarkers         Release
 call :build MissingLogos        Release

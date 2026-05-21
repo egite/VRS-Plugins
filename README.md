@@ -8,6 +8,10 @@ A collection of plugins for [Virtual Radar Server](http://www.virtualradarserver
 
 > Adds user-configurable links to the aircraft detail panel in the VRS web UI. Each link is a template that substitutes fields like ICAO, registration, callsign, or operator code, so you can wire in external lookup sites (photo databases, registries, flight trackers, etc.) and have them open pre-populated for the selected aircraft.
 
+### DeselectAircraft
+
+> Adds a "Deselect Aircraft" button to the lower-left corner of the VRS map. The button only appears while an aircraft is selected, and clicking it clears the selection — useful for letting the map auto-fit again after you've drilled into a specific target. Enabled by default.
+
 ### LiveATC
 
 > Lets you double-click near an airport on the map to open its [LiveATC.net](https://www.liveatc.net/) page in a new browser tab. The plugin ships with an airport database and matches the click location to the nearest airport with LiveATC coverage.
